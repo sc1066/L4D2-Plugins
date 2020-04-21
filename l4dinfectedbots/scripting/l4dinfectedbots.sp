@@ -8,13 +8,14 @@
 * 
 * Purpose	: This plugin spawns infected bots in L4D1, and gives greater control of the infected bots in L4D1/L4D2.
 * 
-* WARNING	: Please use sourcemod's latest 1.3 branch snapshot.
+* WARNING	: Please use sourcemod's latest 1.8 branch snapshot.
 *
 
 * Version 2.1.3
 	   - Add Convar "l4d_infectedbots_witch_limit", Sets the limit for witches spawned by the plugin (does not affect director witches)
 	   - Remove TurnFlashlightOn since TurnFlashlightOn signature is broken and cause server crash
 	   - Add TurnNightVisionOn for infected player in coop/survival
+	   - Add sm_zs for infected player to suicide if stuck
 	   
 * Version 2.1.2
 	   - Remove tank spawn bug
@@ -609,6 +610,7 @@ public OnPluginStart()
 	// Add a sourcemod command so players can easily join infected in coop/survival
 	RegAdminCmd("sm_ji", JoinInfected, ADMFLAG_SLAY);
 	RegConsoleCmd("sm_js", JoinSurvivors);
+	RegConsoleCmd("sm_zs", ForceInfectedSuicide);
 	#if DEVELOPER
 	RegConsoleCmd("sm_sp", JoinSpectator);
 	RegConsoleCmd("sm_gamemode", CheckGameMode);
@@ -1926,6 +1928,14 @@ public Action:JoinSurvivors(client, args)
 	}
 }
 
+public Action:ForceInfectedSuicide(client, args)
+{
+	if (client && GetClientTeam(client) == 3 && IsPlayerAlive(client))
+	{
+		ForcePlayerSuicide(client);
+	}
+}
+
 // Joining spectators is for developers only, commented in the final
 
 public Action:JoinSpectator(client, args)
@@ -2104,10 +2114,11 @@ public Action:evtPlayerSpawn(Handle:event, const String:name[], bool:dontBroadca
 	{
 		new String:clientname[256];
 		GetClientName(client, clientname, sizeof(clientname));
-		if (L4D2Version && GameMode == 1 && IsFakeClient(client) && RealPlayersOnInfected() && !DisallowTankFunction /*&& !HasOtherFakeTank(client)*/ && StrContains(clientname, "Bot", false) == -1)
+		if (L4D2Version && GameMode == 1 && IsFakeClient(client) && RealPlayersOnInfected() && !DisallowTankFunction /*&& !HasOtherFakeTank(client)*/ && StrContains(clientname, "Infected Bot", false) == -1)
 		{
-			CreateTimer(0.5, TankBugFix, client);
-			CreateTimer(0.6, kickbot, client);
+			//PrintToChatAll("tank clientname: %s",clientname);
+			CreateTimer(0.3, TankBugFix, client);
+			CreateTimer(0.5, kickbot, client);
 		}
 		if (b_LeftSaveRoom)
 		{	
@@ -2147,8 +2158,8 @@ public Action:evtPlayerSpawn(Handle:event, const String:name[], bool:dontBroadca
 					{
 						if (L4D2Version && !AreTherePlayersWhoAreNotTanks() && GetConVarBool(h_CoopPlayableTank) /*&& !HasOtherFakeTank(client)*/ && StrContains(clientname, "Bot", false) == -1 && !DisallowTankFunction || L4D2Version && !GetConVarBool(h_CoopPlayableTank) && !DisallowTankFunction /*&& !HasOtherFakeTank(client)*/ && StrContains(clientname, "Bot", false) == -1)
 						{
-							CreateTimer(0.5, TankBugFix, client);
-							CreateTimer(0.6, kickbot, client);
+							CreateTimer(0.3, TankBugFix, client);
+							CreateTimer(0.5, kickbot, client);
 						}
 						else if (GetConVarBool(h_CoopPlayableTank) && AreTherePlayersWhoAreNotTanks())
 						{
@@ -2668,6 +2679,7 @@ public Action:Spawn_InfectedBot_Director(Handle:timer, any:BotNeeded)
 					resetGhost[i] = true;
 					SetGhostStatus(i, false);
 				}
+				/*
 				else if (!PlayerIsAlive(i) && respawnDelay[i] > 0 && GameMode != 2)
 				{
 					resetLife[i] = true;
@@ -2680,7 +2692,7 @@ public Action:Spawn_InfectedBot_Director(Handle:timer, any:BotNeeded)
 				{
 					AlreadyGhosted[i] = false;
 					SetLifeState(i, true);
-				}
+				}*/
 			}
 		}
 	}
@@ -3388,6 +3400,7 @@ public Action:TankBugFix(Handle:timer, any:client)
 		if (GetEntProp(client, Prop_Data, "m_fFlags") & FL_ONFIRE && PlayerIsAlive(client))
 			tankonfire = true;
 	}
+	else return;
 	
 	
 	new bool:resetGhost[MAXPLAYERS+1];
@@ -4040,11 +4053,13 @@ public Action:Spawn_InfectedBot(Handle:timer)
 					LogMessage("Player is a ghost, taking preventive measures for spawning an infected bot");
 					#endif
 				}
+				/*
 				else if (!PlayerIsAlive(i) && GameMode == 2) // if player is just dead
 				{
 					resetLife[i] = true;
 					SetLifeState(i, false);
 				}
+				
 				else if (!PlayerIsAlive(i) && respawnDelay[i] > 0)
 				{
 					resetLife[i] = true;
@@ -4058,6 +4073,7 @@ public Action:Spawn_InfectedBot(Handle:timer)
 					AlreadyGhosted[i] = false;
 					SetLifeState(i, true);
 				}
+				*/
 			}
 		}
 	}
@@ -4580,6 +4596,18 @@ public Action:TimerAnnounce(Handle:timer, any:client)
 	}
 }
 
+public Action:TimerAnnounce2(Handle:timer, any:client)
+{
+	if (IsClientInGame(client))
+	{
+		if (GetClientTeam(client) == TEAM_INFECTED && IsPlayerAlive(client))
+		{
+			CPrintToChat(client, "[{olive}TS{default}] 注意!卡住、無法通過障礙物可於聊天視窗輸入{lightgreen}!zs{default}自殺.");
+		}
+	}
+}
+
+
 public cvarZombieHPChanged(Handle:convar, const String:oldValue[], const String:newValue[])
 {
 	// Handle a sysadmin modifying the special infected max HP cvars
@@ -5022,6 +5050,8 @@ public Action:evtInfectedSpawn(Handle:event, const String:name[], bool:dontBroad
 			{		
 				CreateTimer(3.0, TimerAnnounce, client);	
 			}
+			if(!IsFakeClient(client) && IsPlayerAlive(client))
+				CreateTimer(5.0, TimerAnnounce2, client);	
 		}
 	}
 }
@@ -5170,12 +5200,9 @@ public Action:evtInfectedWaitSpawn(Handle:event, const String:name[], bool:dontB
 		else if (GameMode != 2 && !IsFakeClient(client))
 		{	
 			//timetowait = GetSpawnTime[client];
-			if(!IsFakeClient(client)) 
-			{
-				timetowait = GetConVarInt(h_InfectedSpawnTimeMin)/2 - TrueNumberOfSurvivors() + (HumansOnInfected() - 1) * 3;
-				if(timetowait <= 8)
-					timetowait = 8;
-			}	
+			timetowait = GetConVarInt(h_InfectedSpawnTimeMin)/2 - TrueNumberOfSurvivors() + (HumansOnInfected() - 1) * 3;
+			if(timetowait <= 8)
+				timetowait = 8;
 		}
 		else
 		{	
