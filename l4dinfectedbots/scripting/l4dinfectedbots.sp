@@ -2679,11 +2679,11 @@ public Action:Spawn_InfectedBot_Director(Handle:timer, any:BotNeeded)
 					resetGhost[i] = true;
 					SetGhostStatus(i, false);
 				}
-				/*
+				
 				else if (!PlayerIsAlive(i) && respawnDelay[i] > 0 && GameMode != 2)
 				{
-					resetLife[i] = true;
-					SetLifeState(i, false);
+					//resetLife[i] = true;
+					//SetLifeState(i, false);
 					#if DEBUGSERVER
 					LogMessage("Detected a dead player with a respawn timer, setting restrictions to prevent player from taking a bot");
 					#endif
@@ -2692,7 +2692,7 @@ public Action:Spawn_InfectedBot_Director(Handle:timer, any:BotNeeded)
 				{
 					AlreadyGhosted[i] = false;
 					SetLifeState(i, true);
-				}*/
+				}
 			}
 		}
 	}
@@ -4053,17 +4053,15 @@ public Action:Spawn_InfectedBot(Handle:timer)
 					LogMessage("Player is a ghost, taking preventive measures for spawning an infected bot");
 					#endif
 				}
-				/*
 				else if (!PlayerIsAlive(i) && GameMode == 2) // if player is just dead
 				{
 					resetLife[i] = true;
 					SetLifeState(i, false);
 				}
-				
 				else if (!PlayerIsAlive(i) && respawnDelay[i] > 0)
 				{
-					resetLife[i] = true;
-					SetLifeState(i, false);
+					//resetLife[i] = true;
+					//SetLifeState(i, false);
 					#if DEBUGSERVER
 					LogMessage("Found a dead player, spawn time has not reached zero, delaying player to Spawn an infected bot");
 					#endif
@@ -4073,7 +4071,7 @@ public Action:Spawn_InfectedBot(Handle:timer)
 					AlreadyGhosted[i] = false;
 					SetLifeState(i, true);
 				}
-				*/
+				
 			}
 		}
 	}
