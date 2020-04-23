@@ -2156,7 +2156,7 @@ public Action:evtPlayerSpawn(Handle:event, const String:name[], bool:dontBroadca
 				{
 					if (IsFakeClient(client) && RealPlayersOnInfected())
 					{
-						if (L4D2Version && !AreTherePlayersWhoAreNotTanks() && GetConVarBool(h_CoopPlayableTank) /*&& !HasOtherFakeTank(client)*/ && StrContains(clientname, "Bot", false) == -1 && !DisallowTankFunction || L4D2Version && !GetConVarBool(h_CoopPlayableTank) && !DisallowTankFunction /*&& !HasOtherFakeTank(client)*/ && StrContains(clientname, "Bot", false) == -1)
+						if (L4D2Version && !AreTherePlayersWhoAreNotTanks() && GetConVarBool(h_CoopPlayableTank) /*&& !HasOtherFakeTank(client)*/ && !DisallowTankFunction && StrContains(clientname, "Bot", false) == -1 || L4D2Version && !GetConVarBool(h_CoopPlayableTank) && !DisallowTankFunction /*&& !HasOtherFakeTank(client)*/ && StrContains(clientname, "Bot", false) == -1)
 						{
 							CreateTimer(0.3, TankBugFix, client);
 							CreateTimer(0.5, kickbot, client);
@@ -3294,7 +3294,7 @@ public Action:TankRespawner(Handle:timer, any:datapack)
 	if (IsClientInGame(client) && IsFakeClient(client) && IsPlayerTank(client) && PlayerIsAlive(client))
 	{
 		CreateTimer(0.1, kickbot, client);
-		CreateTimer(0.2, Timer_DisallowTankFunction);
+		CreateTimer(1.0, Timer_DisallowTankFunction);
 		return;
 	}
 	
