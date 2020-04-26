@@ -16,7 +16,6 @@ new PouncesEaten[MAXPLAYERS+1];
 new Boomed[MAXPLAYERS+1];
 new Smoked[MAXPLAYERS+1];
 
-new bool:HasRoundEnded= false;
 static bool:HasRoundEndedPrinted;
 
 #define ZC_SMOKER               1
@@ -43,22 +42,22 @@ public OnPluginStart()
 	HookEvent("lunge_pounce", Event_LungePounce);//撲到人
 	HookEvent("tongue_grab", Event_TongueGrab);//拉到人
 	HookEvent("player_now_it", Event_PlayerBoomed);//噴到人
-	HookEvent("map_transition", Event_Maptransition, EventHookMode_Pre);
+	HookEvent("map_transition", Event_Maptransition, EventHookMode_Pre); //戰役過關到下一關的時候
 	
 	//IF = FindSendPropInfo("CTerrorPlayer", "m_zombieClass");
 }
 public OnMapStart() 
 { 
-	HasRoundEndedPrinted = false;
-	HasRoundEnded = false;  
+	HasRoundEndedPrinted = false;  
 	kill_infected();
 }
 
 public Action:Event_Maptransition(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if (!HasRoundEnded)
+	if (!HasRoundEndedPrinted)
 	{
 		displaykillinfected(0);
+		HasRoundEndedPrinted = true;
 		return;
 	}	
 }
@@ -153,7 +152,6 @@ public Action:Command_kill(client, args)
 
 displaykillinfected(team)
 {	
-	HasRoundEnded = true;
 	new client;
 	new players = -1;
 	new players_clients[MaxClients+1];
