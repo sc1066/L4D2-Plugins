@@ -24,7 +24,7 @@ Copyright 2009 James Richardson
 // Define constants
 #define PLUGIN_NAME					"All4Dead"
 #define PLUGIN_TAG					"[A4D] "
-#define PLUGIN_VERSION			"2.0.3"
+#define PLUGIN_VERSION			"2.0.4"
 #define MENU_DISPLAY_TIME		15
 
 // Include necessary files
@@ -601,12 +601,13 @@ public Action:Menu_CreateItemMenu(client, args) {
 	AddMenuItem(menu, "sb", "Spawn a pipe bomb");
 	AddMenuItem(menu, "sb", "Spawn a bile jar");
 	AddMenuItem(menu, "sg", "Spawn a gas tank");
-	AddMenuItem(menu, "st", "Spawn a propane tank");
-	AddMenuItem(menu, "so", "Spawn an oxygen tank");
-	AddMenuItem(menu, "sa", "Spawn an ammo pile");
-	AddMenuItem(menu, "si", "Spawn incendiary ammo");
-	AddMenuItem(menu, "se", "Spawn explosive ammo");
-	AddMenuItem(menu, "lp", "Spawn laser sight pack");
+	AddMenuItem(menu, "st", "Spawn a firework");
+	AddMenuItem(menu, "so", "Spawn a propane tank");
+	AddMenuItem(menu, "sa", "Spawn an oxygen tank");
+	AddMenuItem(menu, "si", "Spawn an ammo pile");
+	AddMenuItem(menu, "se", "Spawn incendiary ammo");
+	AddMenuItem(menu, "sf", "Spawn explosive ammo");
+	AddMenuItem(menu, "sn", "Spawn laser sight pack");
 	DisplayMenu(menu, client, MENU_DISPLAY_TIME);
 	return Plugin_Handled;
 }
@@ -631,20 +632,22 @@ public Menu_SpawnItemsHandler(Handle:menu, MenuAction:action, cindex, itempos) {
 			} case 7: {
 				Do_SpawnItem(cindex, "gascan");
 			} case 8: {
-				Do_SpawnItem(cindex, "propanetank");
+				Do_SpawnItem(cindex, "fireworkcrate");
 			} case 9: {
-				Do_SpawnItem(cindex, "oxygentank");
+				Do_SpawnItem(cindex, "propanetank");
 			} case 10: {
+				Do_SpawnItem(cindex, "oxygentank");
+			} case 11: {
 				new Float:location[3];
 				if (!Misc_TraceClientViewToLocation(cindex, location)) {
 					GetClientAbsOrigin(cindex, location);
 				}
 				Do_CreateEntity(cindex, "weapon_ammo_spawn", "models/props/terror/ammo_stack.mdl", location, false);
-			} case 11: {
-				Do_SpawnItem(cindex, "weapon_upgradepack_incendiary");
 			} case 12: {
-				Do_SpawnItem(cindex, "weapon_upgradepack_explosive");
+				Do_SpawnItem(cindex, "weapon_upgradepack_incendiary");
 			} case 13: {
+				Do_SpawnItem(cindex, "weapon_upgradepack_explosive");
+			} case 14: {
 				new Float:location[3];
 				if (!Misc_TraceClientViewToLocation(cindex, location)) {
 					GetClientAbsOrigin(cindex, location);
