@@ -204,7 +204,7 @@ void InitDoor()
 
 public Action DoorLockCountDown(Handle timer)
 {
-	if(!g_bEnable && iDoorLockTime<=0 && iDoorForceOpenTime<=0 && ent_safedoor == -1)
+	if(!g_bEnable || (iDoorLockTime<=0 && iDoorForceOpenTime<=0) || ent_safedoor == -1)
 		return Plugin_Stop;
 		
 	iDoorLockTime--;
