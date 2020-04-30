@@ -32,7 +32,7 @@ float g_fLastUse[MAXPLAYERS+1];
 
 public Plugin myinfo = 
 {
-	name = "saferoom door anti close in l4d",
+	name = "saferoom door anti close in l4d2",
 	author = "Harry Potter",
 	description = "as the name says, you dumb fuck",
 	version = "1.0",
@@ -69,6 +69,7 @@ public void OnPluginStart()
 	g_hCvarAllow.AddChangeHook(ConVarChanged_Allowed);
 	g_hForceStarTime.AddChangeHook(ConVarChanged_Cvars);
 	g_hAntiOpenTime.AddChangeHook(ConVarChanged_Cvars);
+	g_hFadeFakeDoor.AddChangeHook(ConVarChanged_Cvars);
 	
 	IsAllowed();
 	
