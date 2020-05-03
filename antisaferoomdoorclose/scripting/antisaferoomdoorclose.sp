@@ -145,7 +145,7 @@ void SetDefault()
 
 void ClearDefault()
 {
-	if(ent_safedoor > 0) DispatchKeyValue(ent_safedoor, "spawnflags", "8192");
+	if(ent_safedoor > 0 && IsValidEntity(ent_safedoor)) DispatchKeyValue(ent_safedoor, "spawnflags", "8192");
 }
 	
 public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast) 
@@ -204,7 +204,7 @@ void InitDoor()
 
 public Action DoorLockCountDown(Handle timer)
 {
-	if(!g_bEnable || (iDoorLockTime<=0 && iDoorForceOpenTime<=0) || ent_safedoor == -1)
+	if(!g_bEnable || (iDoorLockTime<=0 && iDoorForceOpenTime<=0) || ent_safedoor == -1 || !IsValidEntity(ent_safedoor))
 		return Plugin_Stop;
 		
 	iDoorLockTime--;
