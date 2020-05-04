@@ -1,6 +1,6 @@
 /********************************************************************************************
 * Plugin	: L4D/L4D2 InfectedBots (Versus Coop/Coop Versus)
-* Version	: 2.1.4
+* Version	: 2.1.5
 * Game		: Left 4 Dead 1 & 2
 * Author	: djromero (SkyDavid, David) and MI 5 and Harry Potter
 * Testers	: Myself, MI 5
@@ -9,7 +9,12 @@
 * Purpose	: This plugin spawns infected bots in L4D1, and gives greater control of the infected bots in L4D1/L4D2.
 * 
 * WARNING	: Please use sourcemod's latest 1.8 branch snapshot.
-*
+* 
+* Version 2.1.5
+	   - Add sm_zlimit - control max special zombies limit
+	   - Add sm_timer - control special zombies spawn timer
+	   - Removed TurnNightVisionOn, use Another TurnFlashlightOn Model
+
 * Version 2.1.4
 	   - Fixed "l4d_infectedbots_max_specials" and "l4d_infectedbots_add_specials" not working 
 
@@ -426,11 +431,12 @@
 
 #include <sourcemod>
 #include <sdktools>
-#include <colors>
+#include <sdkhooks>
+#include <multicolors>
 
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "2.1.4"
+#define PLUGIN_VERSION "2.1.5"
 
 #define DEBUGSERVER 0
 #define DEBUGCLIENTS 0
@@ -448,6 +454,7 @@
 #define ZOMBIECLASS_SPITTER	4
 #define ZOMBIECLASS_JOCKEY	5
 #define ZOMBIECLASS_CHARGER	6
+#define MODEL_LIGHT			"models/props_lighting/flashlight_dropped_01.mdl"
 
 // Variables
 static InfectedRealCount; // Holds the amount of real infected players
@@ -560,6 +567,8 @@ static Handle:h_Announce 	= INVALID_HANDLE;
 static Handle:h_TankHealth	= INVALID_HANDLE;
 static i_OriginalTankHealth;
 static i_OriginalMaxPlayerZombies;
+int g_iClientColor[MAXPLAYERS+1], g_iClientIndex[MAXPLAYERS+1], g_iLightIndex[MAXPLAYERS+1], g_iLights[MAXPLAYERS+1], g_iModelIndex[MAXPLAYERS+1];
+bool g_bValidMap;
 
 public Plugin:myinfo = 
 {
@@ -610,9 +619,11 @@ public OnPluginStart()
 	// will not be in the final versions.
 	
 	// Add a sourcemod command so players can easily join infected in coop/survival
-	RegAdminCmd("sm_ji", JoinInfected, ADMFLAG_SLAY);
+	RegConsoleCmd("sm_ji", JoinInfected);
 	RegConsoleCmd("sm_js", JoinSurvivors);
-	RegConsoleCmd("sm_zs", ForceInfectedSuicide);
+	RegConsoleCmd("sm_zs", ForceInfectedSuicide,"suicide myself (if infected get stuck or somthing)");
+	RegAdminCmd("sm_zlimit", Console_ZLimit, ADMFLAG_SLAY,"control max special zombies limit");
+	RegAdminCmd("sm_timer", Console_Timer, ADMFLAG_SLAY,"control special zombies spawn timer");
 	#if DEVELOPER
 	RegConsoleCmd("sm_sp", JoinSpectator);
 	RegConsoleCmd("sm_gamemode", CheckGameMode);
@@ -629,26 +640,26 @@ public OnPluginStart()
 	h_Difficulty = FindConVar("z_difficulty");
 	
 	// console variables
-	h_BoomerLimit = CreateConVar("l4d_infectedbots_boomer_limit", "2", "Sets the limit for boomers spawned by the plugin", FCVAR_SPONLY);
-	h_SmokerLimit = CreateConVar("l4d_infectedbots_smoker_limit", "2", "Sets the limit for smokers spawned by the plugin", FCVAR_SPONLY);
-	h_TankLimit = CreateConVar("l4d_infectedbots_tank_limit", "1", "Sets the limit for tanks spawned by the plugin (does not affect director tanks)", FCVAR_SPONLY);
-	h_WitchLimit = CreateConVar("l4d_infectedbots_witch_max_limit", "3", "Sets the limit for witches spawned by the plugin (does not affect director witches)", FCVAR_SPONLY);
+	h_BoomerLimit = CreateConVar("l4d_infectedbots_boomer_limit", "2", "Sets the limit for boomers spawned by the plugin", FCVAR_SPONLY, true, 0.0);
+	h_SmokerLimit = CreateConVar("l4d_infectedbots_smoker_limit", "2", "Sets the limit for smokers spawned by the plugin", FCVAR_SPONLY, true, 0.0);
+	h_TankLimit = CreateConVar("l4d_infectedbots_tank_limit", "1", "Sets the limit for tanks spawned by the plugin (does not affect director tanks)", FCVAR_SPONLY, true, 0.0);
+	h_WitchLimit = CreateConVar("l4d_infectedbots_witch_max_limit", "3", "Sets the limit for witches spawned by the plugin (does not affect director witches)", FCVAR_SPONLY, true, 0.0);
 	if (L4D2Version)
 	{
-		h_SpitterLimit = CreateConVar("l4d_infectedbots_spitter_limit", "1", "Sets the limit for spitters spawned by the plugin", FCVAR_SPONLY);
-		h_JockeyLimit = CreateConVar("l4d_infectedbots_jockey_limit", "2", "Sets the limit for jockeys spawned by the plugin", FCVAR_SPONLY);
-		h_ChargerLimit = CreateConVar("l4d_infectedbots_charger_limit", "2", "Sets the limit for chargers spawned by the plugin", FCVAR_SPONLY);
-		h_HunterLimit = CreateConVar("l4d_infectedbots_hunter_limit", "2", "Sets the limit for hunters spawned by the plugin", FCVAR_SPONLY);
+		h_SpitterLimit = CreateConVar("l4d_infectedbots_spitter_limit", "1", "Sets the limit for spitters spawned by the plugin", FCVAR_SPONLY, true, 0.0);
+		h_JockeyLimit = CreateConVar("l4d_infectedbots_jockey_limit", "2", "Sets the limit for jockeys spawned by the plugin", FCVAR_SPONLY, true, 0.0);
+		h_ChargerLimit = CreateConVar("l4d_infectedbots_charger_limit", "2", "Sets the limit for chargers spawned by the plugin", FCVAR_SPONLY, true, 0.0);
+		h_HunterLimit = CreateConVar("l4d_infectedbots_hunter_limit", "2", "Sets the limit for hunters spawned by the plugin", FCVAR_SPONLY, true, 0.0);
 	}
 	else
 	{
-		h_HunterLimit = CreateConVar("l4d_infectedbots_hunter_limit", "2", "Sets the limit for hunters spawned by the plugin", FCVAR_SPONLY);
+		h_HunterLimit = CreateConVar("l4d_infectedbots_hunter_limit", "2", "Sets the limit for hunters spawned by the plugin", FCVAR_SPONLY, true, 0.0);
 	}
-	h_MaxPlayerZombies = CreateConVar("l4d_infectedbots_max_specials", "2", "Defines how many special infected can be on the map on all gamemodes", FCVAR_SPONLY); 
-	h_PlayerAddZombies = CreateConVar("l4d_infectedbots_add_specials", "1", "If server has more than 4+ players, increase the certain value to l4d_infectedbots_max_specials each player joins in coop/survival", FCVAR_SPONLY); 
-	h_PlayerAddTankHealth = CreateConVar("l4d_infectedbots_add_tankhealth", "600", "If server has more than 4+ players, increase the certain value to Tank Health each player joins in coop/survival", FCVAR_SPONLY); 
-	h_InfectedSpawnTimeMax = CreateConVar("l4d_infectedbots_spawn_time_max", "60", "Sets the max spawn time for special infected spawned by the plugin in seconds", FCVAR_SPONLY);
-	h_InfectedSpawnTimeMin = CreateConVar("l4d_infectedbots_spawn_time_min", "30", "Sets the minimum spawn time for special infected spawned by the plugin in seconds", FCVAR_SPONLY);
+	h_MaxPlayerZombies = CreateConVar("l4d_infectedbots_max_specials", "2", "Defines how many special infected can be on the map on all gamemodes(does not count tank and witch)", FCVAR_SPONLY, true, 0.0); 
+	h_PlayerAddZombies = CreateConVar("l4d_infectedbots_add_specials", "1", "If server has more than 4+ players, increase the certain value to l4d_infectedbots_max_specials each player joins in coop/survival", FCVAR_SPONLY, true, 0.0); 
+	h_PlayerAddTankHealth = CreateConVar("l4d_infectedbots_add_tankhealth", "600", "If server has more than 4+ players, increase the certain value to Tank Health each player joins in coop/survival", FCVAR_SPONLY, true, 0.0); 
+	h_InfectedSpawnTimeMax = CreateConVar("l4d_infectedbots_spawn_time_max", "60", "Sets the max spawn time for special infected spawned by the plugin in seconds", FCVAR_SPONLY, true, 1.0);
+	h_InfectedSpawnTimeMin = CreateConVar("l4d_infectedbots_spawn_time_min", "30", "Sets the minimum spawn time for special infected spawned by the plugin in seconds", FCVAR_SPONLY, true, 1.0);
 	h_DirectorSpawn = CreateConVar("l4d_infectedbots_director_spawn", "0", "If 1, the plugin will use the director's timing of the spawns, if the game is L4D2 and versus, it will activate Valve's bots", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	h_CoopPlayableTank = CreateConVar("l4d_infectedbots_coop_versus_tank_playable", "1", "If 1, tank will be playable in coop/survival", FCVAR_NOTIFY|FCVAR_SPONLY, true, 0.0, true, 1.0);
 	h_JoinableTeams = CreateConVar("l4d_infectedbots_coop_versus", "1", "If 1, players can join the infected team in coop/survival (!ji in chat to join infected, !js to join survivors)", FCVAR_SPONLY, true, 0.0, true, 1.0);
@@ -662,8 +673,8 @@ public OnPluginStart()
 	h_InfHUD = CreateConVar("l4d_infectedbots_infhud_enable", "1", "Toggle whether Infected HUD is active or not.", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	h_Announce = CreateConVar("l4d_infectedbots_infhud_announce", "1", "Toggle whether Infected HUD announces itself to clients.", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	h_idletime_b4slay = CreateConVar("l4d_infectedbots_lifespan", "30", "Amount of seconds before a special infected bot is kicked", FCVAR_SPONLY);
-	h_InitialSpawn = CreateConVar("l4d_infectedbots_initial_spawn_timer", "10", "The spawn timer in seconds used when infected bots are spawned for the first time in a map", FCVAR_SPONLY);
-	h_HumanCoopLimit = CreateConVar("l4d_infectedbots_coop_versus_human_limit", "2", "Sets the limit for the amount of humans that can join the infected team in coop/survival", FCVAR_SPONLY);
+	h_InitialSpawn = CreateConVar("l4d_infectedbots_initial_spawn_timer", "10", "The spawn timer in seconds used when infected bots are spawned for the first time in a map", FCVAR_SPONLY, true, 0.0);
+	h_HumanCoopLimit = CreateConVar("l4d_infectedbots_coop_versus_human_limit", "2", "Sets the limit for the amount of humans that can join the infected team in coop/survival", FCVAR_SPONLY, true, 0.0);
 	h_AdminJoinInfected = CreateConVar("l4d_infectedbots_admin_coop_versus", "1", "If 1, only admins can join the infected team in coop/survival", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	h_BotGhostTime = CreateConVar("l4d_infectedbots_ghost_time", "1", "If higher than zero, the plugin will ghost bots before they fully spawn on versus/scavenge", FCVAR_SPONLY);
 	h_DisableSpawnsTank = CreateConVar("l4d_infectedbots_spawns_disabled_tank", "0", "If 1, Plugin will disable spawning when a tank is on the field", FCVAR_SPONLY, true, 0.0, true, 1.0);
@@ -1530,6 +1541,9 @@ DirectorStuff()
 
 public Action:evtRoundEnd (Handle:event, const String:name[], bool:dontBroadcast)
 {
+	for( int i = 1; i <= MaxClients; i++ )
+		DeleteLight(i);
+
 	// If round has not been reported as ended ..
 	if (!b_HasRoundEnded)
 	{
@@ -1577,6 +1591,15 @@ public Action:evtRoundEnd (Handle:event, const String:name[], bool:dontBroadcast
 public OnMapStart()
 {
 	PlayersInServer = 0;
+	g_bValidMap = true;
+
+	char sMap[64];
+	GetCurrentMap(sMap, sizeof(sMap));
+	if( StrContains("c1m3_mall", sMap, false) != -1 )
+		g_bValidMap = false;
+
+	if( g_bValidMap )
+		PrecacheModel(MODEL_LIGHT, true);
 }
 
 public OnMapEnd()
@@ -1905,11 +1928,7 @@ public Action:JoinInfected(client, args)
 		
 	if (client && (GameMode == 1 || GameMode == 3) && GetConVarBool(h_JoinableTeams))
 	{
-		if (GetConVarBool(h_AdminJoinInfected))
-		{
-			ChangeClientTeam(client, TEAM_INFECTED);
-		}
-		else
+		if ((GetConVarBool(h_AdminJoinInfected) && IsPlayerGenericAdmin(client)) || !GetConVarBool(h_AdminJoinInfected))
 		{
 			if (HumansOnInfected() < GetConVarInt(h_HumanCoopLimit))
 				ChangeClientTeam(client, TEAM_INFECTED);
@@ -1935,6 +1954,141 @@ public Action:ForceInfectedSuicide(client, args)
 	}
 }
 
+public Action Console_ZLimit(int client, int args)
+{
+	if (client == 0)
+	{
+		PrintToServer("[TS] sm_zlimit cannot be used by server.");
+		return Plugin_Handled;
+	}
+	if(args > 1)
+	{
+		ReplyToCommand(client, "[TS] Usage: sm_zlimit <Integer> - How many special infected can be.");		
+		return Plugin_Handled;
+	}
+	if(args < 1) 
+	{
+		ReplyToCommand(client, "[TS] Current Special Infected Limit is %d\nUsage: sm_zlimit <Integer> - Special Infected Limit.",HunterLimit);	
+		return Plugin_Handled;
+	}
+	
+	char arg1[64];
+	GetCmdArg(1, arg1, 64);
+	if(IsInteger(arg1))
+	{
+		int newlimit = StringToInt(arg1);
+		if(newlimit>31)
+		{
+			ReplyToCommand(client, "[TS] why you need so many special infected?");
+		}
+		else if (newlimit<0)
+		{
+			ReplyToCommand(client, "[TS] Usage: sm_zlimit <Integer> - How many special infected can be.");
+		}
+		else if(newlimit!=MaxPlayerZombies)
+		{
+
+			SetConVarInt(FindConVar("l4d_infectedbots_max_specials"), newlimit);
+			i_OriginalMaxPlayerZombies = newlimit;
+			CPrintToChatAll("[{olive}TS{default}] {blue}%N{default}: Special Infected Limit has been changed to {green}%d",client,newlimit);	
+		}
+		else
+		{
+			ReplyToCommand(client, "[TS] Special Infected Limit is already %d",MaxPlayerZombies);	
+		}
+		return Plugin_Handled;
+	}
+	else
+	{
+		ReplyToCommand(client, "[TS] Usage: sm_zlimit <Integer> - Hunter Infected Bot Limit.");		
+		return Plugin_Handled;
+	}	
+}
+
+public Action Console_Timer(int client, int args)
+{
+	if (client == 0)
+	{
+		PrintToServer("[TS] sm_timer cannot be used by server.");
+		return Plugin_Handled;
+	}
+	
+	if(args > 2)
+	{
+		ReplyToCommand(client, "[TS] Usage: sm_timer <Integer> |  sm_timer <MAX> <MIN> - Infected Bot Spawn Timer.");		
+		return Plugin_Handled;
+	}
+	if(args < 1) 
+	{
+		ReplyToCommand(client, "[TS] Current Spawn Timer %d-%d\nUsage: sm_timer <Integer> |  sm_timer <MAX> <MIN> - Infected Bot Spawn Timer.",GetConVarInt(h_InfectedSpawnTimeMax),GetConVarInt(h_InfectedSpawnTimeMin) );	
+		return Plugin_Handled;
+	}
+	
+	if(args == 1)
+	{
+		char arg1[64];
+		GetCmdArg(1, arg1, 64);
+		if(IsInteger(arg1))
+		{
+			int DD = StringToInt(arg1);
+			
+			if(DD<=0)
+			{
+				ReplyToCommand(client, "[TS] Failed to set timer! minimum value is 1.");
+			}
+			else
+			{
+				SetConVarInt(FindConVar("l4d_infectedbots_adjust_spawn_times"), 0);
+				SetConVarInt(FindConVar("l4d_infectedbots_spawn_time_max"), DD);
+				SetConVarInt(FindConVar("l4d_infectedbots_spawn_time_min"), DD);
+				CPrintToChatAll("[{olive}TS{default}] {blue}%N{default}: Bot Spawn Timer has been changed to {green}%d {default}- {green}%d",client,DD,DD);	
+			}
+			return Plugin_Handled;
+		}
+		else
+		{
+			ReplyToCommand(client, "[TS] Usage: sm_timer <Integer> |  sm_timer <MAX> <MIN> - Infected Bot Spawn Timer.");		
+			return Plugin_Handled;
+		}	
+	}
+	else
+	{
+		char arg1[64];
+		GetCmdArg(1, arg1, 64);
+		char arg2[64];
+		GetCmdArg(2, arg2, 64);
+		if(IsInteger(arg1) && IsInteger(arg2))
+		{
+			int Max = StringToInt(arg1);
+			int Min = StringToInt(arg2);
+			if(Min>Max)
+			{
+				int temp = Max;
+				Max = Min;
+				Min = temp;
+			}
+			
+			if(Max>120)
+			{
+				ReplyToCommand(client, "[TS] why so long?");
+			}
+			else
+			{
+				SetConVarInt(FindConVar("l4d_infectedbots_adjust_spawn_times"), 0);
+				SetConVarInt(FindConVar("l4d_infectedbots_spawn_time_max"), Max);
+				SetConVarInt(FindConVar("l4d_infectedbots_spawn_time_min"), Min);
+				CPrintToChatAll("[{olive}TS{default}] {blue}%N{default}: Bot Spawn Timer has been changed to {green}%d {default}- {green}%d",client,Max,Min);	
+			}
+			return Plugin_Handled;
+		}
+		else
+		{
+			ReplyToCommand(client, "[TS] Usage: sm_timer <Integer> |  sm_timer <MAX> <MIN> - Infected Bot Spawn Timer.");		
+			return Plugin_Handled;
+		}
+	}
+}
+
 // Joining spectators is for developers only, commented in the final
 
 public Action:JoinSpectator(client, args)
@@ -1951,9 +2105,9 @@ public Action:AnnounceJoinInfected(Handle:timer, any:client)
 	{
 		if ((GetConVarBool(h_JoinableTeamsAnnounce)) && (GetConVarBool(h_JoinableTeams)) && ((GameMode == 1) || (GameMode == 3)))
 		{
-			PrintHintText(client, "IBP: 聊天視窗輸入 !ji 加入感染者(只限管理員)，或是輸入 !js 加入倖存者!");
-			CPrintToChat(client, "IBP: 聊天視窗輸入 {green}!ji{default} 加入感染者(只限管理員)");
-			CPrintToChat(client, "或是輸入 {olive}!js{default} 加入倖存者!");
+			//PrintHintText(client, "IBP: 聊天視窗輸入 !ji 加入感染者(只限管理員)，或是輸入 !js 加入倖存者!");
+			CPrintToChat(client, "[{olive}TS{default}]聊天視窗輸入 {green}!ji{default} 加入感染者(只限管理員)");
+			CPrintToChat(client, "輸入 {olive}!js{default} 加入倖存者!");
 		}
 	}
 }
@@ -2203,9 +2357,9 @@ public Action:evtPlayerSpawn(Handle:event, const String:name[], bool:dontBroadca
 		if (FreeSpawnReset[client] == true)
 			FreeSpawnReset[client] = false;
 	}
-	
+
 	// Turn on Flashlight for Infected player
-	TurnNightVisionOn(client);
+	if(!IsFakeClient(client)) TurnFlashlightOn(client);
 	
 	// If its Versus and the bot is not a tank, make the bot into a ghost
 	if (IsFakeClient(client) && GameMode == 2 && !IsPlayerTank(client))
@@ -2505,11 +2659,12 @@ public Action:FreeSpawnEnsure2(Handle:timer, any:client)
 
 public Action:evtPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	// If round has ended .. we ignore this
-	if (b_HasRoundEnded || !b_LeftSaveRoom) return Plugin_Continue;
-	
 	// We get the client id and time
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(client) DeleteLight(client); // Delete attached flashlight
+
+	// If round has ended .. we ignore this
+	if (b_HasRoundEnded || !b_LeftSaveRoom) return Plugin_Continue;
 	
 	if (FightOrDieTimer[client] != INVALID_HANDLE)
 	{
@@ -2788,7 +2943,8 @@ public Action:evtPlayerTeam(Handle:event, const String:name[], bool:dontBroadcas
 	
 	// We get the client id and time
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
-	
+	if(client) DeleteLight(client);
+
 	// If player's new/old team is infected, we recount the infected and add bots if needed ...
 	if (!b_HasRoundEnded && b_LeftSaveRoom && GameMode == 2)
 	{
@@ -4521,6 +4677,10 @@ bool:LeftStartArea()
 
 public OnPluginEnd()
 {
+
+	for( int i = 1; i <= MaxClients; i++ )
+		DeleteLight(i);
+
 	if (L4D2Version)
 	{
 		ResetConVar(FindConVar("survival_max_smokers"), true, true);
@@ -5053,7 +5213,9 @@ public Action:evtInfectedSpawn(Handle:event, const String:name[], bool:dontBroad
 				CreateTimer(3.0, TimerAnnounce, client);	
 			}
 			if(!IsFakeClient(client) && IsPlayerAlive(client))
+			{
 				CreateTimer(5.0, TimerAnnounce2, client);	
+			}
 		}
 	}
 }
@@ -5288,23 +5450,141 @@ stock InfectedForceGhost(client)
 }
 
 
-stock TurnNightVisionOn(client)
+stock void TurnFlashlightOn(int client)
 {
 	if (GameMode == 2) return;
 	if (!IsClientInGame(client)) return;
-	if (GetClientTeam(client) != 3) return;
+	if (GetClientTeam(client) != TEAM_INFECTED) return;
 	if (!PlayerIsAlive(client)) return;
 	if (IsFakeClient(client)) return;
 
-	new d=GetEntProp(client, Prop_Send, "m_bNightVisionOn");
-	if(d==0)
+	DeleteLight(client);
+
+	// Declares
+	int entity;
+	float vOrigin[3], vAngles[3];
+
+	// Flashlight model
+	if( g_bValidMap )
 	{
-		SetEntProp(client, Prop_Send, "m_bNightVisionOn",1); 
-		//PrintHintText(client, "Night Vision On");
+		entity = CreateEntityByName("prop_dynamic");
+		if( entity == -1 )
+		{
+			LogError("Failed to create 'prop_dynamic'");
+		}
+		else
+		{
+			SetEntityModel(entity, MODEL_LIGHT);
+			DispatchSpawn(entity);
+
+			vOrigin = view_as<float>(  { 0.0, 0.0, -2.0 });
+			vAngles = view_as<float>(  { 180.0, 9.0, 90.0 });
+
+			// Attach to survivor
+			SetVariantString("!activator");
+			AcceptEntityInput(entity, "SetParent", client);
+			SetVariantString("grenade");
+			AcceptEntityInput(entity, "SetParentAttachment");
+
+			TeleportEntity(entity, vOrigin, vAngles, NULL_VECTOR);
+			SDKHook(entity, SDKHook_SetTransmit, Hook_SetTransmitLight);
+			g_iModelIndex[client] = EntIndexToEntRef(entity);
+		}
 	}
-	return;
+
+	// Position light
+	vOrigin = view_as<float>(  { 0.5, -1.5, -7.5 });
+	vAngles = view_as<float>(  { -45.0, -45.0, 90.0 });
+
+	// Light_Dynamic
+	entity = MakeLightDynamic(vOrigin, vAngles, client);
+	g_iLightIndex[client] = EntIndexToEntRef(entity);
+
+	if( g_iClientIndex[client] == GetClientUserId(client) )
+	{
+		SetEntProp(entity, Prop_Send, "m_clrRender", g_iClientColor[client]);
+		AcceptEntityInput(entity, "TurnOff");
+	}
+	else
+	{
+		g_iClientIndex[client] = GetClientUserId(client);
+		g_iClientColor[client] = GetEntProp(entity, Prop_Send, "m_clrRender");
+		AcceptEntityInput(entity, "TurnOff");
+	}
+
+	entity = g_iLightIndex[client];
+	if( !IsValidEntRef(entity) )
+		return;
+
+	// Specified colors
+	char sTempL[12];
+	Format(sTempL, sizeof(sTempL), "255 51 51");
+
+	SetVariantEntity(entity);
+	SetVariantString(sTempL);
+	AcceptEntityInput(entity, "color");
+	AcceptEntityInput(entity, "toggle");
+
+	int color = GetEntProp(entity, Prop_Send, "m_clrRender");
+	if( color != g_iClientColor[client] )
+		AcceptEntityInput(entity, "turnon");
+	g_iClientColor[client] = color;
+
 }
 
+void DeleteLight(int client)
+{
+	int entity = g_iLightIndex[client];
+	g_iLightIndex[client] = 0;
+	DeleteEntity(entity);
+
+	entity = g_iModelIndex[client];
+	g_iModelIndex[client] = 0;
+	DeleteEntity(entity);
+
+	entity = g_iLights[client];
+	g_iLights[client] = 0;
+	DeleteEntity(entity);
+}
+
+void DeleteEntity(int entity)
+{
+	if( IsValidEntRef(entity) )
+		AcceptEntityInput(entity, "Kill");
+}
+
+int MakeLightDynamic(const float vOrigin[3], const float vAngles[3], int client)
+{
+	int entity = CreateEntityByName("light_dynamic");
+	if( entity == -1)
+	{
+		LogError("Failed to create 'light_dynamic'");
+		return 0;
+	}
+
+	char sTemp[16];
+	Format(sTemp, sizeof(sTemp), "255 51 51 255");
+	DispatchKeyValue(entity, "_light", sTemp);
+	DispatchKeyValue(entity, "brightness", "1");
+	DispatchKeyValueFloat(entity, "spotlight_radius", 32.0);
+	DispatchKeyValueFloat(entity, "distance", 500.0);
+	DispatchKeyValue(entity, "style", "0");
+	DispatchSpawn(entity);
+	AcceptEntityInput(entity, "TurnOn");
+
+	// Attach to survivor
+	SetVariantString("!activator");
+	AcceptEntityInput(entity, "SetParent", client);
+
+	if( GetClientTeam(client) == 2 )
+	{
+		SetVariantString("grenade");
+		AcceptEntityInput(entity, "SetParentAttachment");
+	}
+
+	TeleportEntity(entity, vOrigin, vAngles, NULL_VECTOR);
+	return entity;
+}
 
 stock SwitchToSurvivors(client)
 {
@@ -5351,19 +5631,37 @@ stock SwitchToSurvivors(client)
 	SDKCall(hSwitch, client, true);
 	return;
 }
-/*
-bool:HasOtherFakeTank(client)
+
+public bool IsInteger(char[] buffer)
 {
-	for (new i=1;i<=MaxClients;i++)
-	{
-		if ( i != client && IsClientInGame(i) && IsFakeClient(i) && GetClientTeam(i) == 3 && IsPlayerTank(i) && IsPlayerAlive(i)) // player is connected and is not fake and it's in game ...
-		{
-			return true;
-		}
-	}
+    int len = strlen(buffer);
+    for (int i = 0; i < len; i++)
+    {
+        if ( !IsCharNumeric(buffer[i]) )
+            return false;
+    }
+
+    return true;    
+}
+
+bool IsValidEntRef(int entity)
+{
+	if( entity && EntRefToEntIndex(entity) != INVALID_ENT_REFERENCE )
+		return true;
 	return false;
 }
 
+bool IsPlayerGenericAdmin(int client)
+{
+    if (CheckCommandAccess(client, "generic_admin", ADMFLAG_GENERIC, false))
+    {
+        return true;
+    }
+
+    return false;
+}  
+
+/*
 bool:IsWitch(entity)
 {
     if (entity > 0 && IsValidEntity(entity) && IsValidEdict(entity))
@@ -5375,4 +5673,13 @@ bool:IsWitch(entity)
     return false;
 }
 */
+// ====================================================================================================
+//					SDKHOOKS TRANSMIT
+// ====================================================================================================
+public Action Hook_SetTransmitLight(int entity, int client)
+{
+	if( g_iLights[client] == EntIndexToEntRef(entity) )
+		return Plugin_Continue;
+	return Plugin_Handled;
+}
 ///////////////////////////////////////////////////////////////////////////
