@@ -1,6 +1,6 @@
 /********************************************************************************************
 * Plugin	: L4D/L4D2 InfectedBots (Versus Coop/Coop Versus)
-* Version	: 2.1.3
+* Version	: 2.1.4
 * Game		: Left 4 Dead 1 & 2
 * Author	: djromero (SkyDavid, David) and MI 5 and Harry Potter
 * Testers	: Myself, MI 5
@@ -10,9 +10,11 @@
 * 
 * WARNING	: Please use sourcemod's latest 1.8 branch snapshot.
 *
+* Version 2.1.4
+	   - Fixed "l4d_infectedbots_max_specials" and "l4d_infectedbots_add_specials" not working 
 
 * Version 2.1.3
-	   - Add Convar "l4d_infectedbots_witch_limit", Sets the limit for witches spawned by the plugin (does not affect director witches)
+	   - Add Convar "l4d_infectedbots_witch_max_limit", Sets the maximum limit for witches spawned by the plugin (does not affect director witches)
 	   - Remove TurnFlashlightOn since TurnFlashlightOn signature is broken and cause server crash
 	   - Add TurnNightVisionOn for infected player in coop/survival
 	   - Add sm_zs for infected player to suicide if stuck
@@ -428,7 +430,7 @@
 
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "2.1.3"
+#define PLUGIN_VERSION "2.1.4"
 
 #define DEBUGSERVER 0
 #define DEBUGCLIENTS 0
@@ -630,7 +632,7 @@ public OnPluginStart()
 	h_BoomerLimit = CreateConVar("l4d_infectedbots_boomer_limit", "2", "Sets the limit for boomers spawned by the plugin", FCVAR_SPONLY);
 	h_SmokerLimit = CreateConVar("l4d_infectedbots_smoker_limit", "2", "Sets the limit for smokers spawned by the plugin", FCVAR_SPONLY);
 	h_TankLimit = CreateConVar("l4d_infectedbots_tank_limit", "1", "Sets the limit for tanks spawned by the plugin (does not affect director tanks)", FCVAR_SPONLY);
-	h_WitchLimit = CreateConVar("l4d_infectedbots_witch_limit", "3", "Sets the limit for witches spawned by the plugin (does not affect director witches)", FCVAR_SPONLY);
+	h_WitchLimit = CreateConVar("l4d_infectedbots_witch_max_limit", "3", "Sets the limit for witches spawned by the plugin (does not affect director witches)", FCVAR_SPONLY);
 	if (L4D2Version)
 	{
 		h_SpitterLimit = CreateConVar("l4d_infectedbots_spitter_limit", "1", "Sets the limit for spitters spawned by the plugin", FCVAR_SPONLY);
@@ -644,7 +646,7 @@ public OnPluginStart()
 	}
 	h_MaxPlayerZombies = CreateConVar("l4d_infectedbots_max_specials", "2", "Defines how many special infected can be on the map on all gamemodes", FCVAR_SPONLY); 
 	h_PlayerAddZombies = CreateConVar("l4d_infectedbots_add_specials", "1", "If server has more than 4+ players, increase the certain value to l4d_infectedbots_max_specials each player joins in coop/survival", FCVAR_SPONLY); 
-	h_PlayerAddTankHealth = CreateConVar("l4d_infectedbots_add_tankhealth", "1000", "If server has more than 4+ players, increase the certain value to Tank Health each player joins in coop/survival", FCVAR_SPONLY); 
+	h_PlayerAddTankHealth = CreateConVar("l4d_infectedbots_add_tankhealth", "600", "If server has more than 4+ players, increase the certain value to Tank Health each player joins in coop/survival", FCVAR_SPONLY); 
 	h_InfectedSpawnTimeMax = CreateConVar("l4d_infectedbots_spawn_time_max", "60", "Sets the max spawn time for special infected spawned by the plugin in seconds", FCVAR_SPONLY);
 	h_InfectedSpawnTimeMin = CreateConVar("l4d_infectedbots_spawn_time_min", "30", "Sets the minimum spawn time for special infected spawned by the plugin in seconds", FCVAR_SPONLY);
 	h_DirectorSpawn = CreateConVar("l4d_infectedbots_director_spawn", "0", "If 1, the plugin will use the director's timing of the spawns, if the game is L4D2 and versus, it will activate Valve's bots", FCVAR_SPONLY, true, 0.0, true, 1.0);
@@ -685,7 +687,6 @@ public OnPluginStart()
 	}
 	HookConVarChange(h_MaxPlayerZombies, ConVarMaxPlayerZombies);
 	MaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
-	i_OriginalMaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
 	HookConVarChange(h_PlayerAddZombies, ConVarPlayerAddZombies);
 	g_PlayerAddZombies = GetConVarInt(h_PlayerAddZombies);
 	HookConVarChange(h_PlayerAddTankHealth, ConVarPlayerAddTankHealth);
@@ -735,7 +736,6 @@ public OnPluginStart()
 	HookEvent("player_team", evtPlayerTeam);
 	HookEvent("player_spawn", evtPlayerSpawn);
 	HookEvent("create_panic_event", evtSurvivalStart);
-	HookEvent("tank_frustrated", evtTankFrustrated);
 	HookEvent("finale_start", evtFinaleStart);
 	HookEvent("mission_lost", evtMissionLost);
 	HookEvent("player_death", evtInfectedDeath);
@@ -752,7 +752,7 @@ public OnPluginStart()
 	HookEvent("player_transitioned", evtPlayerFirstSpawned);
 	HookEvent("player_left_start_area", evtPlayerFirstSpawned);
 	HookEvent("player_left_checkpoint", evtPlayerFirstSpawned);
-	
+	HookEvent("tank_frustrated",evtTankFrustrated);
 	
 	
 	
@@ -829,6 +829,13 @@ public OnPluginStart()
 	
 	h_TankHealth = FindConVar("z_tank_health");
 	i_OriginalTankHealth = GetConVarInt(h_TankHealth);
+	i_OriginalMaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
+}
+
+public void OnConfigsExecuted()
+{
+	i_OriginalTankHealth = GetConVarInt(h_TankHealth);
+	i_OriginalMaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
 }
 
 public ConVarBoomerLimit(Handle:convar, const String:oldValue[], const String:newValue[])
@@ -1001,7 +1008,6 @@ TweakSettings()
 				SetConVarInt(FindConVar("z_hunter_limit"), 0);
 			}
 			SetConVarFloat(FindConVar("tank_ground_pound_duration"), 0.1);
-			SetConVarInt(FindConVar("Z_frustration_lifetime"), 999999999);
 		}
 		case 2: // Versus, Better Versus Infected AI
 		{
@@ -1061,7 +1067,6 @@ TweakSettings()
 				SetConVarInt(FindConVar("z_hunter_limit"), 0);
 			}
 			SetConVarFloat(FindConVar("tank_ground_pound_duration"), 0.1);
-			SetConVarInt(FindConVar("Z_frustration_lifetime"), 999999999);
 		}
 	}
 	
@@ -1090,7 +1095,6 @@ ResetCvars()
 	if (GameMode == 1)
 	{
 		ResetConVar(FindConVar("tank_ground_pound_duration"), true, true);
-		ResetConVar(FindConVar("Z_frustration_lifetime"), true, true);
 		if (L4D2Version)
 		{
 			ResetConVar(FindConVar("survival_max_smokers"), true, true);
@@ -1154,7 +1158,6 @@ ResetCvars()
 		ResetConVar(FindConVar("hunter_pounce_ready_range"), true, true);
 		ResetConVar(FindConVar("hunter_pounce_loft_rate"), true, true);
 		ResetConVar(FindConVar("tank_ground_pound_duration"), true, true);
-		ResetConVar(FindConVar("Z_frustration_lifetime"), true, true);
 	}
 }
 
@@ -1860,10 +1863,6 @@ public OnClientPutInServer(client)
 	// End Durzel's code **********************************************************************************
 	
 	CheckRealPlayers_InSV();
-	
-	#if DEBUGSERVER
-	LogMessage("OnClientPutInServer has started");
-	#endif
 	
 	if(PlayersInServer >= 5 && GameMode != 2)
 	{
@@ -3090,6 +3089,12 @@ public Action:evtTankFrustrated(Handle:event, const String:name[], bool:dontBroa
 	LogMessage("Tank is frustrated!");
 	#endif
 	CreateTimer(2.0, TankFrustratedTimer, _, TIMER_FLAG_NO_MAPCHANGE);
+
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(client && IsClientInGame(client) && GetClientTeam(client) == TEAM_INFECTED && !IsFakeClient(client))
+	{
+		ForcePlayerSuicide(client);
+	}
 }
 
 // The main Tank code, it allows a player to take over the tank when if allowed, and adds additional tanks if the tanks per spawn cvar was set.
@@ -4556,7 +4561,6 @@ public OnPluginEnd()
 	ResetConVar(h_MaxPlayerZombies, true, true);
 	ResetConVar(FindConVar("z_tank_health"), true, true);
 	ResetConVar(FindConVar("tank_ground_pound_duration"), true, true);
-	ResetConVar(FindConVar("Z_frustration_lifetime"), true, true);
 	ResetConVar(FindConVar("vs_max_team_switches"), true, true);
 	if (!L4D2Version)
 		ResetConVar(FindConVar("sb_all_bot_team"), true, true);
