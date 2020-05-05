@@ -717,7 +717,7 @@ public void OnPluginStart()
 	hSpawnDistanceMax = CreateConVar("l4d_infectedbots_spawn_range_max", "1500", "The maximum of spawn range for infected", FCVAR_NONE, true, 1.0);
 	hSpawnDistanceFinal = CreateConVar("l4d_infectedbots_spawn_range_final", "300", "The maximum of spawn range for infected", FCVAR_NONE, true, 0.0);
 	hWitchPeriodMax = CreateConVar("l4d_infectedbots_witch_spawn_time_max", "120.0", "Sets the max spawn time for witch spawned by the plugin in seconds.", FCVAR_NONE, true, 1.0);
-	hWitchPeriodMin = CreateConVar("l4d_infectedbots_witch_spawn_time_mix", "90.0", "Sets the mix spawn time for witch spawned by the plugin in seconds.", FCVAR_NONE, true, 1.0);
+	hWitchPeriodMin = CreateConVar("l4d_infectedbots_witch_spawn_time_min", "90.0", "Sets the mix spawn time for witch spawned by the plugin in seconds.", FCVAR_NONE, true, 1.0);
 	hWitchSpawnFinal = CreateConVar("l4d_infectedbots_witch_spawn_final", "0", "If 1, still spawn witch in final stage rescue", FCVAR_NONE, true, 0.0, true, 1.0);
 	hWitchKillTime = CreateConVar("l4d_infectedbots_witch_lifespan", "200", "Amount of seconds before a witch is kicked", FCVAR_NONE, true, 1.0);
 
@@ -1744,7 +1744,7 @@ public Action PlayerLeftStart(Handle Timer)
 			LogMessage("Checking to see if we need bots");
 			#endif
 			CreateTimer(3.0, InitialSpawnReset, _, TIMER_FLAG_NO_MAPCHANGE);
-			CreateTimer(float(GetURandomIntRange(GetConVarInt(hWitchPeriodMin), GetConVarInt(hWitchPeriodMax))), SpawnWitchAuto, _, 0);
+			CreateTimer(float(GetURandomIntRange(GetConVarInt(hWitchPeriodMin), GetConVarInt(hWitchPeriodMax))), SpawnWitchAuto, _);
 		}
 	}
 	else
