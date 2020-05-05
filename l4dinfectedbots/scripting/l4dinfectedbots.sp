@@ -593,7 +593,6 @@ static Handle usrHUDPref 		= null;	// Stores the client HUD preferences persiste
 Handle FightOrDieTimer[MAXPLAYERS+1]; // kill idle bots
 Handle KillWitchTimer[MAXENTITIES];// kill idle witches
 
-static int i_OriginalTankHealth;
 static int i_OriginalMaxPlayerZombies;
 int g_iClientColor[MAXPLAYERS+1], g_iClientIndex[MAXPLAYERS+1], g_iLightIndex[MAXPLAYERS+1], g_iLights[MAXPLAYERS+1], g_iModelIndex[MAXPLAYERS+1];
 bool g_bValidMap;
@@ -884,7 +883,6 @@ public void OnPluginStart()
 	// Create persistent storage for client HUD preferences 
 	usrHUDPref = CreateTrie();
 	
-	i_OriginalTankHealth = GetConVarInt(cvarZombieHP[6]);
 	i_OriginalMaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
 
 	//Autoconfig for plugin
@@ -893,7 +891,6 @@ public void OnPluginStart()
 
 public void OnConfigsExecuted()
 {
-	i_OriginalTankHealth = GetConVarInt(cvarZombieHP[6]);
 	i_OriginalMaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
 }
 
@@ -944,8 +941,7 @@ public void ConVarPlayerAddZombies(Handle convar, const char[] oldValue, const c
 
 public void ConVarTankHealth(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	i_OriginalTankHealth = GetConVarInt(h_TankHealth);
-	SetConVarInt(FindConVar("z_tank_health"), i_OriginalTankHealth);
+	SetConVarInt(FindConVar("z_tank_health"), GetConVarInt(h_TankHealth));
 }
 
 public void ConVarPlayerAddTankHealth(Handle convar, const char[] oldValue, const char[] newValue)
@@ -2934,7 +2930,7 @@ public Action ColdDown_Timer(Handle timer)
 	{
 		int addition = iSurplayers - 4;
 		SetConVarInt(h_MaxPlayerZombies, i_OriginalMaxPlayerZombies + g_PlayerAddZombies * (addition/GetConVarInt(h_PlayerAddZombiesScale)));
-		SetConVarInt(cvarZombieHP[6], i_OriginalTankHealth + g_PlayerAddTankHealth * (addition/GetConVarInt(h_PlayerAddTankHealthScale)));
+		SetConVarInt(cvarZombieHP[6], GetConVarInt(h_TankHealth) + g_PlayerAddTankHealth * (addition/GetConVarInt(h_PlayerAddTankHealthScale)));
 		MaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
 		SetConVarInt(FindConVar("z_max_player_zombies"), MaxPlayerZombies);
 		iPlayersInSurvivorTeam = iSurplayers;
