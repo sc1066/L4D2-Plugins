@@ -3244,6 +3244,7 @@ public Action KickWitch_Timer(Handle timer, int entity)
 		if(bKill)
 		{
 			AcceptEntityInput(entity, "Kill");
+			KillWitchTimer[entity] = null;
 		}
 		else KillWitchTimer[entity] = CreateTimer(GetConVarFloat(hWitchKillTime),KickWitch_Timer,entity);
 	}
@@ -5561,7 +5562,7 @@ void GetSpawnDisConvars()
 
 public Action SpawnWitchAuto(Handle timer, float waitTime)
 {
-	if( (FinaleStarted && !GetConVarBool(hWitchSpawnFinal)) || b_HasRoundEnded ) return Plugin_Handled;
+	if( (FinaleStarted && !GetConVarBool(hWitchSpawnFinal)) || b_HasRoundEnded || !g_bValidMap) return Plugin_Handled;
 
 	int witches=0;
 	
