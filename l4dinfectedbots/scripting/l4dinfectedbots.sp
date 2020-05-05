@@ -5562,7 +5562,11 @@ void GetSpawnDisConvars()
 
 public Action SpawnWitchAuto(Handle timer, float waitTime)
 {
-	if( (FinaleStarted && !GetConVarBool(hWitchSpawnFinal)) || b_HasRoundEnded || !g_bValidMap) return Plugin_Handled;
+	if( (FinaleStarted && !GetConVarBool(hWitchSpawnFinal)) || b_HasRoundEnded) return Plugin_Handled;
+	
+	char sMap[64];
+	GetCurrentMap(sMap, sizeof(sMap));
+	if( StrContains("c6m1_riverbank", sMap, false) != -1 ) return Plugin_Handled; //spawning witch in this stage cause server crash
 
 	int witches=0;
 	
