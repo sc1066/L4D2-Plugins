@@ -3866,8 +3866,6 @@ int BotTypeNeeded()
 					#endif
 					return 7;
 				}
-				else if(random2 == 2)
-					random++;
 				else
 					random = GetURandomIntRange(1, 6);
 			}
@@ -3924,8 +3922,6 @@ int BotTypeNeeded()
 					#endif
 					return 7;
 				}
-				else if(random2 == 2)
-					random++;
 				else
 					random = GetURandomIntRange(1, 3);
 			}
