@@ -18,7 +18,7 @@
 	   - Add Convar "l4d_infectedbots_spawn_range_max"
 	   - Add Convar "l4d_infectedbots_spawn_range_final"
 	   - Add Convar "l4d_infectedbots_witch_spawn_time_max",
-	   - Add Convar "l4d_infectedbots_witch_spawn_time_mix"
+	   - Add Convar "l4d_infectedbots_witch_spawn_time_min"
 	   - Add Convar "l4d_infectedbots_witch_spawn_final"
 	   - Add Convar "l4d_infectedbots_witch_lifespan"
 	   - Add Convar "l4d_infectedbots_add_specials_scale"
@@ -1143,7 +1143,6 @@ void TweakSettings()
 	//Some cvar tweaks
 	SetConVarInt(FindConVar("z_attack_flow_range"), 50000);
 	SetConVarInt(FindConVar("director_spectate_specials"), 1);
-	SetConVarInt(FindConVar("z_spawn_safety_range"), 0);
 	SetConVarInt(FindConVar("z_spawn_flow_limit"), 50000);
 	DirectorCvarsModified = false;
 	if (L4D2Version)
@@ -1575,7 +1574,6 @@ public Action MaxSpecialsSet(Handle Timer)
 void DirectorStuff()
 {	
 	SpecialHalt = false;
-	SetConVarInt(FindConVar("z_spawn_safety_range"), 0);
 	SetConVarInt(FindConVar("director_spectate_specials"), 1);
 	ResetConVar(FindConVar("versus_special_respawn_interval"), true, true);
 	
@@ -4546,6 +4544,9 @@ public void OnPluginEnd()
 	ResetConVar(FindConVar("z_attack_flow_range"), true, true);
 	ResetConVar(FindConVar("director_spectate_specials"), true, true);
 	ResetConVar(FindConVar("z_spawn_safety_range"), true, true);
+	ResetConVar(FindConVar("z_spawn_range"), true, true);
+	ResetConVar(FindConVar("z_finale_spawn_safety_range"), true, true);
+	ResetConVar(FindConVar("z_finale_spawn_tank_safety_range"), true, true);
 	ResetConVar(FindConVar("z_spawn_flow_limit"), true, true);
 	ResetConVar(h_MaxPlayerZombies, true, true);
 	ResetConVar(FindConVar("z_tank_health"), true, true);
