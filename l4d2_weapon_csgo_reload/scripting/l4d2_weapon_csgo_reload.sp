@@ -2,7 +2,9 @@
 #include <sourcemod>
 #include <sdkhooks>
 #include <sdktools>
+#define CLASSNAME_LENGTH 	64
 #define DEBUG 0
+#pragma newdecls required //強制1.7以後的新語法
 
 enum WeaponID
 {
@@ -30,31 +32,31 @@ enum WeaponID
 	ID_WEAPON_MAX
 }
 #define PISTOL_RELOAD_INCAP_MULTIPLY 1.25
-char Weapon_Name[ID_WEAPON_MAX][32];
-int WeaponAmmoOffest[ID_WEAPON_MAX];
-int WeaponMaxClip[ID_WEAPON_MAX];
+char Weapon_Name[view_as<int>(ID_WEAPON_MAX)][CLASSNAME_LENGTH];
+int WeaponAmmoOffest[view_as<int>(ID_WEAPON_MAX)];
+int WeaponMaxClip[view_as<int>(ID_WEAPON_MAX)];
 
 //cvars
-Handle hEnableReloadClipCvar;
-Handle hEnableClipRecoverCvar;
-Handle hSmgTimeCvar;
-Handle hRifleTimeCvar;
-Handle hHuntingRifleTimeCvar;
-Handle hPistolTimeCvar;
-Handle hDualPistolTimeCvar;
-Handle hSmgSilencedTimeCvar;
-Handle hSmgMP5TimeCvar;
-Handle hAK47TimeCvar;
-Handle hRifleDesertTimeCvar;
-Handle hSniperMilitaryTimeCvar;
-Handle hGrenadeTimeCvar;
-Handle hSG552TimeCvar;
-Handle hAWPTimeCvar;
-Handle hScoutTimeCvar;
-Handle hMangumTimeCvar;
+ConVar hEnableReloadClipCvar;
+ConVar hEnableClipRecoverCvar;
+ConVar hSmgTimeCvar;
+ConVar hRifleTimeCvar;
+ConVar hHuntingRifleTimeCvar;
+ConVar hPistolTimeCvar;
+ConVar hDualPistolTimeCvar;
+ConVar hSmgSilencedTimeCvar;
+ConVar hSmgMP5TimeCvar;
+ConVar hAK47TimeCvar;
+ConVar hRifleDesertTimeCvar;
+ConVar hSniperMilitaryTimeCvar;
+ConVar hGrenadeTimeCvar;
+ConVar hSG552TimeCvar;
+ConVar hAWPTimeCvar;
+ConVar hScoutTimeCvar;
+ConVar hMangumTimeCvar;
 
-float g_EnableReloadClipCvar;
-float g_EnableClipRecoverCvar;
+bool g_EnableReloadClipCvar;
+bool g_EnableClipRecoverCvar;
 float g_SmgTimeCvar;
 float g_RifleTimeCvar;
 float g_HuntingRifleTimeCvar;
@@ -76,15 +78,27 @@ float g_hClientReload_Time[MAXPLAYERS+1]	= {0.0};
 
 //offest
 int ammoOffset;	
-											
-public Plugin:myinfo = 
+									
+public Plugin myinfo = 
 {
 	name = "L4D2 weapon csgo reload",
 	author = "Harry Potter",
 	description = "reload like csgo weapon",
-	version = "1.6",
-	url = "https://forums.alliedmods.net/showthread.php?t=318820"
+	version = "1.7",
+	url = "Harry Potter myself,you bitch shit"
 };
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	EngineVersion test = GetEngineVersion();
+	
+	if( test != Engine_Left4Dead2 )
+	{
+		strcopy(error, err_max, "Plugin only supports Left 4 Dead 2.");
+		return APLRes_SilentFailure;
+	}
+	return APLRes_Success;
+}
 
 public void OnPluginStart()
 {
@@ -106,41 +120,41 @@ public void OnPluginStart()
 	hScoutTimeCvar			= CreateConVar("l4d2_scout_reload_clip_time", 			"1.45", "reload time for scout clip"  			  , FCVAR_NOTIFY);
 	hMangumTimeCvar			= CreateConVar("l4d2_mangum_reload_clip_time", 			"1.18", "reload time for mangum clip"  			  , FCVAR_NOTIFY);
 	
-	g_EnableReloadClipCvar  = GetConVarFloat(hEnableReloadClipCvar);
-	g_EnableClipRecoverCvar = GetConVarFloat(hEnableClipRecoverCvar);
-	g_SmgTimeCvar 			= GetConVarFloat(hSmgTimeCvar);
-	g_RifleTimeCvar 		= GetConVarFloat(hRifleTimeCvar);
-	g_HuntingRifleTimeCvar	= GetConVarFloat(hHuntingRifleTimeCvar);
-	g_PistolTimeCvar 		= GetConVarFloat(hPistolTimeCvar);
-	g_DualPistolTimeCvar 	= GetConVarFloat(hDualPistolTimeCvar);
-	g_SmgSilencedTimeCvar	= GetConVarFloat(hSmgSilencedTimeCvar);
-	g_SmgMP5TimeCvar		= GetConVarFloat(hSmgMP5TimeCvar);
-	g_AK47TimeCvar			= GetConVarFloat(hAK47TimeCvar);
-	g_RifleDesertTimeCvar	= GetConVarFloat(hRifleDesertTimeCvar);
-	g_SniperMilitaryTimeCvar= GetConVarFloat(hSniperMilitaryTimeCvar);
-	g_GrenadeTimeCvar		= GetConVarFloat(hGrenadeTimeCvar);
-	g_SG552TimeCvar			= GetConVarFloat(hSG552TimeCvar);
-	g_AWPTimeCvar			= GetConVarFloat(hAWPTimeCvar);
-	g_ScoutTimeCvar			= GetConVarFloat(hScoutTimeCvar);
-	g_MangumTimeCvar		= GetConVarFloat(hMangumTimeCvar);
+	g_EnableReloadClipCvar  = hEnableReloadClipCvar.BoolValue;
+	g_EnableClipRecoverCvar = hEnableClipRecoverCvar.BoolValue;
+	g_SmgTimeCvar 			= hSmgTimeCvar.FloatValue;
+	g_RifleTimeCvar 		= hRifleTimeCvar.FloatValue;
+	g_HuntingRifleTimeCvar	= hHuntingRifleTimeCvar.FloatValue;
+	g_PistolTimeCvar 		= hPistolTimeCvar.FloatValue;
+	g_DualPistolTimeCvar 	= hDualPistolTimeCvar.FloatValue;
+	g_SmgSilencedTimeCvar	= hSmgSilencedTimeCvar.FloatValue;
+	g_SmgMP5TimeCvar		= hSmgMP5TimeCvar.FloatValue;
+	g_AK47TimeCvar			= hAK47TimeCvar.FloatValue;
+	g_RifleDesertTimeCvar	= hRifleDesertTimeCvar.FloatValue;
+	g_SniperMilitaryTimeCvar= hSniperMilitaryTimeCvar.FloatValue;
+	g_GrenadeTimeCvar		= hGrenadeTimeCvar.FloatValue;
+	g_SG552TimeCvar			= hSG552TimeCvar.FloatValue;
+	g_AWPTimeCvar			= hAWPTimeCvar.FloatValue;
+	g_ScoutTimeCvar			= hScoutTimeCvar.FloatValue;
+	g_MangumTimeCvar		= hMangumTimeCvar.FloatValue;
 	
-	HookConVarChange(hEnableReloadClipCvar, ConVarChange_hEnableReloadClipCvar);
-	HookConVarChange(hEnableClipRecoverCvar, ConVarChange_hEnableClipRecoverCvar);
-	HookConVarChange(hSmgTimeCvar, ConVarChange_hSmgTimeCvar);
-	HookConVarChange(hRifleTimeCvar, ConVarChange_hRifleTimeCvar);
-	HookConVarChange(hHuntingRifleTimeCvar, ConVarChange_hHuntingRifleTimeCvar);
-	HookConVarChange(hPistolTimeCvar, ConVarChange_hPistolTimeCvar);
-	HookConVarChange(hDualPistolTimeCvar, ConVarChange_hDualPistolTimeCvar);
-	HookConVarChange(hSmgSilencedTimeCvar, ConVarChange_hSmgSilencedTimeCvar);
-	HookConVarChange(hSmgMP5TimeCvar, ConVarChange_hSmgMP5TimeCvar);
-	HookConVarChange(hAK47TimeCvar, ConVarChange_hAK47TimeCvar);
-	HookConVarChange(hRifleDesertTimeCvar, ConVarChange_hRifleDesertTimeCvar);
-	HookConVarChange(hSniperMilitaryTimeCvar, ConVarChange_hSniperMilitaryTimeCvar);
-	HookConVarChange(hGrenadeTimeCvar, ConVarChange_hGrenadeTimeCvar);
-	HookConVarChange(hSG552TimeCvar, ConVarChange_hSG552TimeCvar);
-	HookConVarChange(hAWPTimeCvar, ConVarChange_hAWPTimeCvar);
-	HookConVarChange(hScoutTimeCvar, ConVarChange_hScoutTimeCvar);
-	HookConVarChange(hMangumTimeCvar, ConVarChange_hMangumTimeCvar);
+	hEnableReloadClipCvar.AddChangeHook(ConVarChange_hEnableReloadClipCvar);
+	hEnableClipRecoverCvar.AddChangeHook(ConVarChange_hEnableClipRecoverCvar);
+	hSmgTimeCvar.AddChangeHook(ConVarChange_hSmgTimeCvar);
+	hRifleTimeCvar.AddChangeHook(ConVarChange_hRifleTimeCvar);
+	hHuntingRifleTimeCvar.AddChangeHook(ConVarChange_hHuntingRifleTimeCvar);
+	hPistolTimeCvar.AddChangeHook(ConVarChange_hPistolTimeCvar);
+	hDualPistolTimeCvar.AddChangeHook(ConVarChange_hDualPistolTimeCvar);
+	hSmgSilencedTimeCvar.AddChangeHook(ConVarChange_hSmgSilencedTimeCvar);
+	hSmgMP5TimeCvar.AddChangeHook(ConVarChange_hSmgMP5TimeCvar);
+	hAK47TimeCvar.AddChangeHook(ConVarChange_hAK47TimeCvar);
+	hRifleDesertTimeCvar.AddChangeHook(ConVarChange_hRifleDesertTimeCvar);
+	hSniperMilitaryTimeCvar.AddChangeHook(ConVarChange_hSniperMilitaryTimeCvar);
+	hGrenadeTimeCvar.AddChangeHook(ConVarChange_hGrenadeTimeCvar);
+	hSG552TimeCvar.AddChangeHook(ConVarChange_hSG552TimeCvar);
+	hAWPTimeCvar.AddChangeHook(ConVarChange_hAWPTimeCvar);
+	hScoutTimeCvar.AddChangeHook(ConVarChange_hScoutTimeCvar);
+	hMangumTimeCvar.AddChangeHook(ConVarChange_hMangumTimeCvar);
 	
 	HookEvent("weapon_reload", OnWeaponReload_Event, EventHookMode_Post);
 	HookEvent("round_start", RoundStart_Event);
@@ -152,9 +166,9 @@ public void OnPluginStart()
 	AutoExecConfig(true, "l4d2_weapon_csgo_reload");
 }
 
-public Action:RoundStart_Event(Handle:event, const String:name[], bool:dontBroadcast)
+public Action RoundStart_Event(Event event, const char[] name, bool dontBroadcast) 
 {
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		g_hClientReload_Time[i] = 0.0;
 	}
@@ -231,7 +245,7 @@ public void SetWeapon()
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
-	if(g_EnableReloadClipCvar == 0 || g_EnableClipRecoverCvar == 0)	return Plugin_Continue;
+	if(g_EnableReloadClipCvar == false || g_EnableClipRecoverCvar == false)	return Plugin_Continue;
 	
 	if (IsClientInGame(client) && !IsFakeClient(client) && GetClientTeam(client) == 2 && IsPlayerAlive(client) && buttons & IN_RELOAD) //If survivor alive player is holding weapon and wants to reload
 	{
@@ -253,9 +267,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			
 			switch(weaponid)
 			{
-				case (WeaponID:ID_SMG),(WeaponID:ID_RIFLE),(WeaponID:ID_HUNTING_RIFLE),(WeaponID:ID_SMG_SILENCED),(WeaponID:ID_SMG_MP5),
-				(WeaponID:ID_AK47),(WeaponID:ID_RIFLE_DESERT),(WeaponID:ID_AWP),(WeaponID:ID_GRENADE),(WeaponID:ID_SCOUT),(WeaponID:ID_SG552),
-				(WeaponID:ID_SNIPER_MILITARY):
+				case ID_SMG,ID_RIFLE,ID_HUNTING_RIFLE,ID_SMG_SILENCED,ID_SMG_MP5,
+				ID_AK47,ID_RIFLE_DESERT,ID_AWP,ID_GRENADE,ID_SCOUT,ID_SG552,
+				ID_SNIPER_MILITARY:
 				{
 					if (0 < previousclip && previousclip < MaxClip)	//If the his current mag equals the maximum allowed, remove reload from buttons
 					{
@@ -312,19 +326,17 @@ public Action RecoverWeaponClip(Handle timer, Handle pack)
 	return Plugin_Handled;
 }
 
-public Action OnWeaponReload_Event(Handle event, const char[] name, bool dontBroadcast)
+public Action OnWeaponReload_Event(Event event, const char[] name, bool dontBroadcast) 
 {
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
-		
 	if (client < 1 || 
 		client > MaxClients ||
 		!IsClientInGame(client) ||
 		IsFakeClient(client) ||
-		GetClientTeam(client) != 2||
-		g_EnableReloadClipCvar == 0) //disable this plugin
+		GetClientTeam(client) != 2 ||
+		g_EnableReloadClipCvar == false) //disable this plugin
 		return Plugin_Continue;
-	
-
+		
 	int iCurrentWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon"); //抓人類目前裝彈的武器
 	if (iCurrentWeapon == -1 || !IsValidEntity(iCurrentWeapon))
 	{
@@ -347,33 +359,33 @@ public Action OnWeaponReload_Event(Handle event, const char[] name, bool dontBro
 	Handle pack;
 	switch(weaponid)
 	{
-		case (WeaponID:ID_SMG): CreateDataTimer(g_SmgTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_RIFLE): CreateDataTimer(g_RifleTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_HUNTING_RIFLE): CreateDataTimer(g_HuntingRifleTimeCvar, WeaponReloadClip, pack,TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_PISTOL): 
+		case ID_SMG: CreateDataTimer(g_SmgTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_RIFLE: CreateDataTimer(g_RifleTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_HUNTING_RIFLE: CreateDataTimer(g_HuntingRifleTimeCvar, WeaponReloadClip, pack,TIMER_FLAG_NO_MAPCHANGE);
+		case ID_PISTOL: 
 		{
 			if(IsIncapacitated(client))
 				CreateDataTimer(g_PistolTimeCvar * PISTOL_RELOAD_INCAP_MULTIPLY, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
 			else
 				CreateDataTimer(g_PistolTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
 		}
-		case (WeaponID:ID_DUAL_PISTOL):
+		case ID_DUAL_PISTOL:
 		{
 			if(IsIncapacitated(client))
 				CreateDataTimer(g_DualPistolTimeCvar * PISTOL_RELOAD_INCAP_MULTIPLY, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
 			else
 				CreateDataTimer(g_DualPistolTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
 		}
-		case (WeaponID:ID_SMG_SILENCED): CreateDataTimer(g_SmgSilencedTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_SMG_MP5): CreateDataTimer(g_SmgMP5TimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_AK47): CreateDataTimer(g_AK47TimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_RIFLE_DESERT): CreateDataTimer(g_RifleDesertTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_AWP): CreateDataTimer(g_AWPTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_SCOUT): CreateDataTimer(g_ScoutTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_GRENADE): CreateDataTimer(g_GrenadeTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_SG552): CreateDataTimer(g_SG552TimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_SNIPER_MILITARY): CreateDataTimer(g_SniperMilitaryTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
-		case (WeaponID:ID_MAGNUM):
+		case ID_SMG_SILENCED: CreateDataTimer(g_SmgSilencedTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_SMG_MP5: CreateDataTimer(g_SmgMP5TimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_AK47: CreateDataTimer(g_AK47TimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_RIFLE_DESERT: CreateDataTimer(g_RifleDesertTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_AWP: CreateDataTimer(g_AWPTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_SCOUT: CreateDataTimer(g_ScoutTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_GRENADE: CreateDataTimer(g_GrenadeTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_SG552: CreateDataTimer(g_SG552TimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_SNIPER_MILITARY: CreateDataTimer(g_SniperMilitaryTimeCvar, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
+		case ID_MAGNUM:
 		{
 			if(IsIncapacitated(client))
 				CreateDataTimer(g_MangumTimeCvar * PISTOL_RELOAD_INCAP_MULTIPLY, WeaponReloadClip, pack, TIMER_FLAG_NO_MAPCHANGE);
@@ -418,9 +430,9 @@ public Action WeaponReloadClip(Handle timer, Handle pack)
 	{
 		switch(weaponid)
 		{
-			case (WeaponID:ID_SMG),(WeaponID:ID_RIFLE),(WeaponID:ID_HUNTING_RIFLE),(WeaponID:ID_SMG_SILENCED),(WeaponID:ID_SMG_MP5),
-			(WeaponID:ID_AK47),(WeaponID:ID_RIFLE_DESERT),(WeaponID:ID_AWP),(WeaponID:ID_GRENADE),(WeaponID:ID_SCOUT),(WeaponID:ID_SG552),
-			(WeaponID:ID_SNIPER_MILITARY):
+			case ID_SMG,ID_RIFLE,ID_HUNTING_RIFLE,ID_SMG_SILENCED,ID_SMG_MP5,
+			ID_AK47,ID_RIFLE_DESERT,ID_AWP,ID_GRENADE,ID_SCOUT,ID_SG552,
+			ID_SNIPER_MILITARY:
 			{
 				#if DEBUG
 					PrintToChatAll("CurrentWeapon reload clip completed");
@@ -440,7 +452,7 @@ public Action WeaponReloadClip(Handle timer, Handle pack)
 				SetWeaponAmmo(client,WeaponAmmoOffest[weaponid],ammo);
 				SetWeaponClip(CurrentWeapon,clip);
 			}
-			case (WeaponID:ID_PISTOL),(WeaponID:ID_DUAL_PISTOL),(WeaponID:ID_MAGNUM),(WeaponID:ID_M60):
+			case ID_PISTOL,ID_DUAL_PISTOL,ID_MAGNUM,ID_M60:
 			{
 				#if DEBUG
 					PrintToChatAll("Pistol reload clip completed");
@@ -455,12 +467,12 @@ public Action WeaponReloadClip(Handle timer, Handle pack)
 	}
 	return Plugin_Handled;
 }
-stock GetWeaponAmmo(int client, int offest)
+stock int GetWeaponAmmo(int client, int offest)
 {
     return GetEntData(client, ammoOffset+(offest*4));
 } 
 
-stock GetWeaponClip(int weapon)
+stock int GetWeaponClip(int weapon)
 {
     return GetEntProp(weapon, Prop_Send, "m_iClip1");
 } 
@@ -474,160 +486,85 @@ stock void SetWeaponClip(int weapon, int clip)
 	SetEntProp(weapon, Prop_Send, "m_iClip1", clip);
 } 
 
-stock IsIncapacitated(client)
+stock bool IsIncapacitated(int client)
 {
-	return GetEntProp(client, Prop_Send, "m_isIncapacitated");
+	return view_as<bool>(GetEntProp(client, Prop_Send, "m_isIncapacitated"));
 }
 
 stock WeaponID GetWeaponID(int weapon,const char[] weapon_name)
 {
-	if(StrEqual(weapon_name,Weapon_Name[ID_DUAL_PISTOL],false) && GetEntProp(weapon, Prop_Send, "m_hasDualWeapons"))
+	for(WeaponID i = ID_NONE; i < ID_WEAPON_MAX ; ++i)
 	{
-		return WeaponID:ID_DUAL_PISTOL;
+		if(StrEqual(weapon_name,Weapon_Name[i],false))
+			return i;
 	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_PISTOL],false))
-	{
-		return WeaponID:ID_PISTOL;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_SMG],false))
-	{
-		return WeaponID:ID_SMG;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_PUMPSHOTGUN],false))
-	{
-		return WeaponID:ID_PUMPSHOTGUN;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_RIFLE],false))
-	{
-		return WeaponID:ID_RIFLE;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_AUTOSHOTGUN],false))
-	{
-		return WeaponID:ID_AUTOSHOTGUN;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_HUNTING_RIFLE],false))
-	{
-		return WeaponID:ID_HUNTING_RIFLE;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_AK47],false))
-	{
-		return WeaponID:ID_AK47;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_AWP],false))
-	{
-		return WeaponID:ID_AWP;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_GRENADE],false))
-	{
-		return WeaponID:ID_GRENADE;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_CHROMESHOTGUN],false))
-	{
-		return WeaponID:ID_CHROMESHOTGUN;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_M60],false))
-	{
-		return WeaponID:ID_M60;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_MAGNUM],false))
-	{
-		return WeaponID:ID_MAGNUM;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_RIFLE_DESERT],false))
-	{
-		return WeaponID:ID_RIFLE_DESERT;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_SCOUT],false))
-	{
-		return WeaponID:ID_SCOUT;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_SG552],false))
-	{
-		return WeaponID:ID_SG552;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_SMG_MP5],false))
-	{
-		return WeaponID:ID_SMG_MP5;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_SMG_SILENCED],false))
-	{
-		return WeaponID:ID_SMG_SILENCED;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_SNIPER_MILITARY],false))
-	{
-		return WeaponID:ID_SNIPER_MILITARY;
-	}
-	else if(StrEqual(weapon_name,Weapon_Name[ID_SPASSHOTGUN],false))
-	{
-		return WeaponID:ID_SPASSHOTGUN;
-	}
-	return WeaponID:ID_NONE;
+	return ID_NONE;
 }
-public void ConVarChange_hEnableReloadClipCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hEnableReloadClipCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_EnableReloadClipCvar  = GetConVarFloat(hEnableReloadClipCvar);
+	g_EnableReloadClipCvar  = hEnableReloadClipCvar.BoolValue;
 }
-public void ConVarChange_hEnableClipRecoverCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hEnableClipRecoverCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_EnableClipRecoverCvar = GetConVarFloat(hEnableClipRecoverCvar);
+	g_EnableClipRecoverCvar = hEnableClipRecoverCvar.BoolValue;
 }
-public void ConVarChange_hSmgTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hSmgTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_SmgTimeCvar = GetConVarFloat(hSmgTimeCvar);
+	g_SmgTimeCvar = hSmgTimeCvar.FloatValue;
 }
-public void ConVarChange_hRifleTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hRifleTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_RifleTimeCvar = GetConVarFloat(hRifleTimeCvar);
+	g_RifleTimeCvar = hRifleTimeCvar.FloatValue;
 }
-public void ConVarChange_hHuntingRifleTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hHuntingRifleTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_HuntingRifleTimeCvar = GetConVarFloat(hHuntingRifleTimeCvar);
+	g_HuntingRifleTimeCvar = hHuntingRifleTimeCvar.FloatValue;
 }
-public void ConVarChange_hPistolTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hPistolTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_PistolTimeCvar = GetConVarFloat(hPistolTimeCvar);
+	g_PistolTimeCvar = hPistolTimeCvar.FloatValue;
 }
-public void ConVarChange_hDualPistolTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hDualPistolTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_DualPistolTimeCvar = GetConVarFloat(hDualPistolTimeCvar);
+	g_DualPistolTimeCvar = hDualPistolTimeCvar.FloatValue;
 }
-public void ConVarChange_hSmgSilencedTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hSmgSilencedTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_SmgSilencedTimeCvar = GetConVarFloat(hSmgSilencedTimeCvar);
+	g_SmgSilencedTimeCvar = hSmgSilencedTimeCvar.FloatValue;
 }
-public void ConVarChange_hSmgMP5TimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hSmgMP5TimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_SmgMP5TimeCvar = GetConVarFloat(hSmgMP5TimeCvar);
+	g_SmgMP5TimeCvar = hSmgMP5TimeCvar.FloatValue;
 }
-public void ConVarChange_hAK47TimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hAK47TimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_AK47TimeCvar = GetConVarFloat(hAK47TimeCvar);
+	g_AK47TimeCvar = hAK47TimeCvar.FloatValue;
 }
-public void ConVarChange_hRifleDesertTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hRifleDesertTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_RifleDesertTimeCvar = GetConVarFloat(hRifleDesertTimeCvar);
+	g_RifleDesertTimeCvar = hRifleDesertTimeCvar.FloatValue;
 }
-public void ConVarChange_hSniperMilitaryTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hSniperMilitaryTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_SniperMilitaryTimeCvar = GetConVarFloat(hSniperMilitaryTimeCvar);
+	g_SniperMilitaryTimeCvar = hSniperMilitaryTimeCvar.FloatValue;
 }
-public void ConVarChange_hGrenadeTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hGrenadeTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_GrenadeTimeCvar = GetConVarFloat(hGrenadeTimeCvar);
+	g_GrenadeTimeCvar = hGrenadeTimeCvar.FloatValue;
 }
-public void ConVarChange_hSG552TimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hSG552TimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_SG552TimeCvar = GetConVarFloat(hSG552TimeCvar);
+	g_SG552TimeCvar = hSG552TimeCvar.FloatValue;
 }
-public void ConVarChange_hAWPTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hAWPTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_AWPTimeCvar = GetConVarFloat(hAWPTimeCvar);
+	g_AWPTimeCvar = hAWPTimeCvar.FloatValue;
 }
-public void ConVarChange_hScoutTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hScoutTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_ScoutTimeCvar = GetConVarFloat(hScoutTimeCvar);
+	g_ScoutTimeCvar = hScoutTimeCvar.FloatValue;
 }
-public void ConVarChange_hMangumTimeCvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarChange_hMangumTimeCvar(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_MangumTimeCvar = GetConVarFloat(hMangumTimeCvar);
+	g_MangumTimeCvar = hMangumTimeCvar.FloatValue;
 }
