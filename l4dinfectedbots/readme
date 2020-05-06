@@ -41,7 +41,7 @@ Spawns infected bots in versus, allows playable special infected in coop/surviva
 "l4d_infectedbots_safe_spawn", "1", "If 1, just spawn special infected whether survivors leave starting safe room or not"
 "l4d_infectedbots_spawn_range_min", "550", "The minimum of spawn range for infected"
 "l4d_infectedbots_spawn_range_max", "1500", "The maximum of spawn range for infected"
-"l4d_infectedbots_spawn_range_final", "300", "The maximum of spawn range for infected"
+"l4d_infectedbots_spawn_range_final", "300", "The minimum of spawn range for infected in final stage rescue"
 "l4d_infectedbots_witch_spawn_time_max", "120.0", "Sets the max spawn time for witch spawned by the plugin in seconds."
 "l4d_infectedbots_witch_spawn_time_mix", "90.0", "Sets the mix spawn time for witch spawned by the plugin in seconds."
 "l4d_infectedbots_witch_spawn_final", "0", "If 1, still spawn witch in final stage rescue"

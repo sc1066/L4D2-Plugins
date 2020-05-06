@@ -715,7 +715,7 @@ public void OnPluginStart()
 	hSafeSpawn = CreateConVar("l4d_infectedbots_safe_spawn", "1", "If 1, just spawn special infected whether survivors leave starting safe room or not", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	hSpawnDistanceMin = CreateConVar("l4d_infectedbots_spawn_range_min", "550", "The minimum of spawn range for infected", FCVAR_NONE, true, 0.0);
 	hSpawnDistanceMax = CreateConVar("l4d_infectedbots_spawn_range_max", "1500", "The maximum of spawn range for infected", FCVAR_NONE, true, 1.0);
-	hSpawnDistanceFinal = CreateConVar("l4d_infectedbots_spawn_range_final", "300", "The maximum of spawn range for infected", FCVAR_NONE, true, 0.0);
+	hSpawnDistanceFinal = CreateConVar("l4d_infectedbots_spawn_range_final", "300", "The minimum of spawn range for infected in final stage rescue", FCVAR_NONE, true, 0.0);
 	hWitchPeriodMax = CreateConVar("l4d_infectedbots_witch_spawn_time_max", "120.0", "Sets the max spawn time for witch spawned by the plugin in seconds.", FCVAR_NONE, true, 1.0);
 	hWitchPeriodMin = CreateConVar("l4d_infectedbots_witch_spawn_time_min", "90.0", "Sets the mix spawn time for witch spawned by the plugin in seconds.", FCVAR_NONE, true, 1.0);
 	hWitchSpawnFinal = CreateConVar("l4d_infectedbots_witch_spawn_final", "0", "If 1, still spawn witch in final stage rescue", FCVAR_NONE, true, 0.0, true, 1.0);
