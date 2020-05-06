@@ -141,13 +141,13 @@ public Action:Event_Player_Hurt(Handle:event, const String:name[], bool:dontBroa
 			if(GetClientTeam(attacker) == 2 && GetClientTeam(victim) == 3 )
 			{
 				new DamageHealth = GetEventInt(event, "dmg_health");
-				if (DamageHealth < 1024)
+				//if (DamageHealth < 1024)
+				//{
+				if (victim != attacker && GetClientTeam(victim) != GetClientTeam(attacker))
 				{
-					if (victim != attacker && GetClientTeam(victim) != GetClientTeam(attacker))
-					{
-						Damage[attacker][victim] += DamageHealth;
-					}
+					Damage[attacker][victim] += DamageHealth;
 				}
+				//}
 			}
 		}
 	}
