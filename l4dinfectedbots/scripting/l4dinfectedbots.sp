@@ -1744,7 +1744,7 @@ public Action PlayerLeftStart(Handle Timer)
 			LogMessage("Checking to see if we need bots");
 			#endif
 			CreateTimer(3.0, InitialSpawnReset, _, TIMER_FLAG_NO_MAPCHANGE);
-			CreateTimer(float(GetURandomIntRange(GetConVarInt(hWitchPeriodMin), GetConVarInt(hWitchPeriodMax))), SpawnWitchAuto, _);
+			CreateTimer(float(GetURandomIntRange(GetConVarInt(hWitchPeriodMin), GetConVarInt(hWitchPeriodMax))), SpawnWitchAuto, _,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
 	else
@@ -5597,7 +5597,7 @@ public Action SpawnWitchAuto(Handle timer, float waitTime)
 
 	int SpawnTime = GetURandomIntRange(GetConVarInt(hWitchPeriodMin), GetConVarInt(hWitchPeriodMax));
 
-	CreateTimer(float(SpawnTime), SpawnWitchAuto, _, 0);
+	CreateTimer(float(SpawnTime), SpawnWitchAuto, _, TIMER_FLAG_NO_MAPCHANGE);
 
 	return Plugin_Handled;
 }
