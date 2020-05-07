@@ -111,9 +111,11 @@ public Action OnUpgradeUse(int entity, int activator, int caller, UseType type, 
 	SetEntProp(entity, Prop_Send, "m_iUsedBySurvivorsMask", 0);
 	
 	bool bForceBlocked = ShouldBeForceBlocked(client, primaryItem);
-
+	
 	if (bForceBlocked || FindValueInArray(usedUpgrades[client], entity) != -1) {
 		PlayDenySound(client);
+		CheckKillPackage(entity);
+		return Plugin_Handled;
 	} else {
 		//PrintToChatAll("%f: First use of %N", GetGameTime(), client);
 		PushArrayCell(usedUpgrades[client], entity);
@@ -123,26 +125,7 @@ public Action OnUpgradeUse(int entity, int activator, int caller, UseType type, 
 		if ((bUsingExplosive[client] && cvarExplosiveMultiValue > 1.0) || (!bUsingExplosive[client] && cvarIncendiaryMultiValue > 1.0)) {
 			SDKHook(client, SDKHook_PostThink, PostThinkMultiply);
 		}
-	}
-	
-	bool bAllSurvivorPickUp = true;
-	for(int i =1; i <= MaxClients;++i)
-	{
-		if(isPlayerSurvivor(i) && FindValueInArray(usedUpgrades[i], entity) == -1) //still someone didn't pick up package
-		{
-			bAllSurvivorPickUp = false;
-			break;
-		}
-	}
-
-	if(bAllSurvivorPickUp) 
-	{
-		int index;
-		for (int i = 1; i <= MaxClients; i++) {
-			if(isPlayerSurvivor(i) && (index = FindValueInArray(usedUpgrades[i], entity)) != -1)
-				RemoveFromArray(usedUpgrades[i],index);
-		}
-		AcceptEntityInput(entity, "Kill");
+		CheckKillPackage(entity);
 	}
 
 	return Plugin_Continue;
@@ -192,6 +175,29 @@ bool ShouldBeForceBlocked(int client, int primaryItem) {
 	}
 
 	return false;
+}
+
+void CheckKillPackage(int entity)
+{
+	bool bAllSurvivorPickUp = true;
+	for(int i =1; i <= MaxClients;++i)
+	{
+		if(isPlayerSurvivor(i) && FindValueInArray(usedUpgrades[i], entity) == -1) //still someone didn't pick up package
+		{
+			bAllSurvivorPickUp = false;
+			break;
+		}
+	}
+
+	if(bAllSurvivorPickUp) 
+	{
+		int index;
+		for (int i = 1; i <= MaxClients; i++) {
+			if(isPlayerSurvivor(i) && (index = FindValueInArray(usedUpgrades[i], entity)) != -1)
+				RemoveFromArray(usedUpgrades[i],index);
+		}
+		AcceptEntityInput(entity, "Kill");
+	}
 }
 
 /* */
