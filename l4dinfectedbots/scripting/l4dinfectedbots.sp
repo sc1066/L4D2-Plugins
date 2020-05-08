@@ -452,7 +452,6 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <left4downtown>
 #include <multicolors>
 
 #pragma semicolon 1
@@ -1445,18 +1444,15 @@ public Action evtPlayerFirstSpawned(Event event, const char[] name, bool dontBro
 	if (PlayerHasEnteredStart[client])
 		return;
 	
-	if (!b_LeftSaveRoom)
+	if (GetConVarBool(h_JoinableTeams) && GameMode != 2 || GetConVarBool(h_VersusCoop) && GameMode == 2)
 	{
-		if (GetConVarBool(h_JoinableTeams) && GameMode != 2 || GetConVarBool(h_VersusCoop) && GameMode == 2)
+		if (L4D2Version)
 		{
-			if (L4D2Version)
-			{
-				SetConVarInt(FindConVar("sb_all_bot_game"), 1);
-				SetConVarInt(FindConVar("allow_all_bot_survivor_team"), 1);
-			}
-			else
-			SetConVarInt(FindConVar("sb_all_bot_team"), 1);
+			SetConVarInt(FindConVar("sb_all_bot_game"), 1);
+			SetConVarInt(FindConVar("allow_all_bot_survivor_team"), 1);
 		}
+		else
+		SetConVarInt(FindConVar("sb_all_bot_team"), 1);
 	}
 	
 	#if DEBUGCLIENTS
@@ -5638,9 +5634,18 @@ stock int L4D2_GetSurvivorVictim(int client)
     return -1;
 }
 
-public int L4D_OnEnterGhostState(int client)
+public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
-	if(client && IsClientInGame(client) && GetClientTeam(client) == TEAM_INFECTED)
+	if(GameMode != 2 && buttons & IN_USE && IsClientInGame(client) && !IsFakeClient(client) && GetClientTeam(client) == TEAM_INFECTED && IsPlayerAlive(client))
+	{
+		CreateTimer(0.1,OnEnterGhostState_Timer,client,TIMER_FLAG_NO_MAPCHANGE);
+	}
+
+}
+
+public Action OnEnterGhostState_Timer(Handle Timer, int client)
+{
+	if(client && IsClientInGame(client) && !IsFakeClient(client) && GetClientTeam(client) == TEAM_INFECTED && IsPlayerGhost(client))
 	{
 		CPrintToChat(client,"[{olive}TS{default}] 禁止回靈魂復活!!");
 		ForcePlayerSuicide(client);
