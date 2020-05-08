@@ -26,6 +26,7 @@ L4D2 Competitive enhancement, bug/glitch fixes, general purpose and freaky-fun p
 * <b>l4d2_spectating_cheat</b>: A spectator who watching the survivor at first person view can now see the infected model glows though the wall
 * <b>antisaferoomdoorclose</b>: saferoom door anti close in l4d2
 * <b>lfd_both_fixUpgradePack</b>: Fixes upgrade packs pickup bug when using survivor model change
+* <b>lockdown_system-l4d2_b</b>: Locks Saferoom Door Until Someone Opens It.
 # Scripting Compiler
 * [sourcemod 1.8 compiler](https://github.com/fbef0102/L4D2-Plugins/releases/download/v1.0/sourcemod_1.8_Compiler.zip) compiler: sourcemod v1.8.0.5977 scripting
 # Others

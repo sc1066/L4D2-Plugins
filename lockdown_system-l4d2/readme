@@ -1,0 +1,12 @@
+Locks Saferoom Door Until Someone Opens It.
+
+Original Post: https://forums.alliedmods.net/showthread.php?t=281305
+
+-Convars-
+"lockdown_system-l4d2_announce", "1", "Enable/Disable Announcements"
+"lockdown_system-l4d2_anti-farm_duration", "300", "Duration Of Anti-Farm"
+"lockdown_system-l4d2_duration", "150", "Duration Of Lockdown"
+"lockdown_system-l4d2_mobs", "5", "Number Of Mobs To Spawn"
+"lockdown_system-l4d2_menu", "0", "Enable/Disable Menu"
+"lockdown_system-l4d2_tank_demolition", "1", "Enable/Disable Tank Demolition, server will spawn tank before door open and after door open"
+"lockdown_system-l4d2_type", "1", "Lockdown Type: 0=Random, 1=Improved, 2 & 3=Default"
