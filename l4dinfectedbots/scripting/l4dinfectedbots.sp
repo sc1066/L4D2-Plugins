@@ -1,6 +1,6 @@
 /********************************************************************************************
 * Plugin	: L4D/L4D2 InfectedBots (Versus Coop/Coop Versus)
-* Version	: 2.2.0
+* Version	: 2.2.1
 * Game		: Left 4 Dead 1 & 2
 * Author	: djromero (SkyDavid, David) and MI 5 and Harry Potter
 * Testers	: Myself, MI 5
@@ -10,6 +10,12 @@
 * 
 * WARNING	: Please use sourcemod's latest 1.8 branch snapshot.
 * 
+* Version 2.2.1
+	   - Infected Player can't suicide if he got survivor
+	   - Kill Tank if tank player frustrated in coop/survival
+	   - Player will be killed if enter ghost state in coop/survival
+	   - Removed Convar "l4d_infectedbots_ghost_spawn"
+
 * Version 2.2.0
 	   - Convert all to New Syntax
 	   - Add Convar "l4d_infectedbots_reduced_spawn_times_on_player"
@@ -446,11 +452,12 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <left4downtown>
 #include <multicolors>
 
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "2.2.0"
+#define PLUGIN_VERSION "2.2.1"
 
 #define DEBUGSERVER 0
 #define DEBUGCLIENTS 0
@@ -518,7 +525,6 @@ static bool TankWasSeen[MAXPLAYERS+1]; // Used only in coop, prevents the Sound 
 static bool PlayerLifeState[MAXPLAYERS+1]; // States whether that player has the lifestate changed from switching the gamemode
 static bool InitialSpawn; // Related to the coordination feature, tells the plugin to let the infected spawn when the survivors leave the safe room
 static bool L4D2Version; // Holds the version of L4D; false if its L4D, true if its L4D2
-static bool FreeSpawnReset[MAXPLAYERS+1]; // Tells the plugin to reset the FreeSpawn convar, used for the finale glitch only
 static bool TempBotSpawned; // Tells the plugin that the tempbot has spawned
 static bool AlreadyGhosted[MAXPLAYERS+1]; // Loop Breaker, prevents a player from spawning into a ghost over and over again
 static bool AlreadyGhostedBot[MAXPLAYERS+1]; // Prevents bots taking over a player from ghosting
@@ -546,7 +552,6 @@ ConVar h_InfectedSpawnTimeMin; // Related to the spawn time cvar
 ConVar h_DirectorSpawn; // yeah you're getting the idea
 ConVar h_CoopPlayableTank; // yup, same thing again
 ConVar h_JoinableTeams; // Can you guess this one?
-ConVar h_FreeSpawn; // We're done now, so be excited
 ConVar h_StatsBoard; // Oops, now we are
 ConVar h_JoinableTeamsAnnounce;
 ConVar h_Coordination;
@@ -698,7 +703,6 @@ public void OnPluginStart()
 	{
 		h_StatsBoard = CreateConVar("l4d_infectedbots_stats_board", "0", "If 1, the stats board will show up after an infected player dies (L4D1 ONLY)", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	}
-	h_FreeSpawn = CreateConVar("l4d_infectedbots_ghost_spawn", "0", "If 1, infected players in coop/survival will spawn as ghosts", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	h_JoinableTeamsAnnounce = CreateConVar("l4d_infectedbots_coop_versus_announce", "1", "If 1, clients will be announced to on how to join the infected team", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	h_Coordination = CreateConVar("l4d_infectedbots_coordination", "0", "If 1, bots will only spawn when all other bot spawn timers are at zero", FCVAR_SPONLY, true, 0.0, true, 1.0);
 	h_InfHUD = CreateConVar("l4d_infectedbots_infhud_enable", "1", "Toggle whether Infected HUD is active or not.", FCVAR_SPONLY, true, 0.0, true, 1.0);
@@ -1359,7 +1363,7 @@ public Action evtRoundStart(Event event, const char[] name, bool dontBroadcast)
 					// If player is a real player ... 
 					if (!IsFakeClient(i))
 					{
-						if (GameMode != 2 && GetConVarBool(h_JoinableTeams) && GetConVarBool(h_AdminJoinInfected))
+						if (GameMode != 2 && GetConVarBool(h_JoinableTeams) && GetConVarBool(h_JoinableTeamsAnnounce))
 						{
 							CreateTimer(10.0, AnnounceJoinInfected, i, TIMER_FLAG_NO_MAPCHANGE);
 						}
@@ -1484,7 +1488,7 @@ public Action evtPlayerFirstSpawned(Event event, const char[] name, bool dontBro
 	AlreadyGhosted[client] = false;
 	PlayerHasEnteredStart[client] = true;
 	
-	if (GameMode != 2 && GetConVarBool(h_JoinableTeams) && GetConVarBool(h_AdminJoinInfected))
+	if (GameMode != 2 && GetConVarBool(h_JoinableTeams) && GetConVarBool(h_JoinableTeamsAnnounce))
 	{
 		CreateTimer(10.0, AnnounceJoinInfected, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
@@ -1963,8 +1967,13 @@ public Action ForceInfectedSuicide(int client, int args)
 {
 	if (client && GetClientTeam(client) == 3 && IsPlayerAlive(client))
 	{
-		ForcePlayerSuicide(client);
+		if( L4D2_GetSurvivorVictim(client) != -1 )
+			CPrintToChat(client,"[{olive}TS{default}] 禁止抓住人類期間自殺!");
+		else
+			ForcePlayerSuicide(client);
 	}
+
+	return Plugin_Handled;
 }
 
 public Action Console_ZLimit(int client, int args)
@@ -2118,8 +2127,10 @@ public Action AnnounceJoinInfected(Handle timer, int client)
 	{
 		if ((GetConVarBool(h_JoinableTeamsAnnounce)) && (GetConVarBool(h_JoinableTeams)) && ((GameMode == 1) || (GameMode == 3)))
 		{
-			//PrintHintText(client, "IBP: 聊天視窗輸入 !ji 加入感染者(只限管理員)，或是輸入 !js 加入倖存者!");
-			CPrintToChat(client, "[{olive}TS{default}] 聊天視窗輸入 {green}!ji{default} 加入感染者(只限管理員)");
+			if(GetConVarBool(h_AdminJoinInfected))
+				CPrintToChat(client, "[{olive}TS{default}] 聊天視窗輸入 {green}!ji{default} 加入感染者(只限管理員)");
+			else
+				CPrintToChat(client, "[{olive}TS{default}] 聊天視窗輸入 {green}!ji{default} 加入感染者");
 			CPrintToChat(client, "輸入 {olive}!js{default} 加入倖存者!");
 		}
 	}
@@ -2352,23 +2363,6 @@ public Action evtPlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 			FightOrDieTimer[client] = null;
 		}
 		FightOrDieTimer[client] = CreateTimer(GetConVarFloat(h_idletime_b4slay), DisposeOfCowards, client);
-	}
-	
-	// Turn infected player into a ghost if Free Spawning is on
-	
-	if (L4D2Version && !AlreadyGhosted[client])
-	{
-		AlreadyGhosted[client] = true;
-		InfectedForceGhost(client);
-	}
-	else if (!L4D2Version && GameMode != 2 && !IsFakeClient(client) && !IsPlayerTank(client) && (GetConVarBool(h_FreeSpawn) && !AlreadyGhosted[client] || FreeSpawnReset[client]))
-	{
-		AlreadyGhosted[client] = true;
-		SetEntProp(client,Prop_Send,"m_isCulling",1);
-		ClientCommand(client, "+use");
-		CreateTimer(0.1, FreeSpawnEnsure, client, TIMER_FLAG_NO_MAPCHANGE);
-		if (FreeSpawnReset[client] == true)
-			FreeSpawnReset[client] = false;
 	}
 
 	// Turn on Flashlight for Infected player
@@ -3723,10 +3717,6 @@ public Action evtMissionLost(Event event, const char[] name, bool dontBroadcast)
 				if (!L4D2Version && FinaleStarted)
 				{
 					PrintToChat(i, "\x04[SM] \x03 Infected Bots: \x04Please wait, you will spawn as a \x03ghost \x04shortly to get by the finale glitch");
-					if (!GetConVarBool(h_FreeSpawn))
-					{
-						FreeSpawnReset[i] = true;
-					}
 					#if DEBUGSERVER
 					LogMessage("Mission lost on the finale");
 					#endif
@@ -5253,7 +5243,6 @@ stock void InfectedForceGhost(int client)
 	static Handle fhZombieAbortControl = null;
 	
 	if (GameMode == 2) return;
-	if (!GetConVarBool(h_FreeSpawn)) return;
 	if (!IsClientInGame(client)) return;
 	if (GetClientTeam(client) != 3) return;
 	if (IsPlayerTank(client)) return;
@@ -5606,5 +5595,55 @@ public Action SpawnWitchAuto(Handle timer, float waitTime)
 bool IsFinalMap()
 {
 	return FindEntityByClassname(-1, "info_changelevel") == INVALID_ENT_REFERENCE;
+}
+
+stock int L4D2_GetSurvivorVictim(int client)
+{
+    int victim;
+
+    /* Charger */
+    victim = GetEntPropEnt(client, Prop_Send, "m_pummelVictim");
+    if (victim > 0)
+    {
+        return victim;
+    }
+
+    victim = GetEntPropEnt(client, Prop_Send, "m_carryVictim");
+    if (victim > 0)
+    {
+        return victim;
+    }
+
+    /* Hunter */
+    victim = GetEntPropEnt(client, Prop_Send, "m_pounceVictim");
+    if (victim > 0)
+    {
+        return victim;
+    }
+
+    /* Smoker */
+    victim = GetEntPropEnt(client, Prop_Send, "m_tongueVictim");
+    if (victim > 0)
+    {
+        return victim;
+    }
+
+    /* Jockey */
+    victim = GetEntPropEnt(client, Prop_Send, "m_jockeyVictim");
+    if (victim > 0)
+    {
+        return victim;
+    }
+
+    return -1;
+}
+
+public int L4D_OnEnterGhostState(int client)
+{
+	if(client && IsClientInGame(client) && GetClientTeam(client) == TEAM_INFECTED)
+	{
+		CPrintToChat(client,"[{olive}TS{default}] 禁止回靈魂復活!!");
+		ForcePlayerSuicide(client);
+	}
 }
 ///////////////////////////////////////////////////////////////////////////

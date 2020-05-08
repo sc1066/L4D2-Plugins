@@ -24,7 +24,6 @@ Spawns infected bots in versus, allows playable special infected in coop/surviva
 "l4d_infectedbots_director_spawn", "0", "If 1, the plugin will use the director's timing of the spawns, if the game is L4D2 and versus, it will activate Valve's bots."
 "l4d_infectedbots_coop_versus_tank_playable", "1", "If 1, tank will be playable in coop/survival"
 "l4d_infectedbots_coop_versus", "1", "If 1, players can join the infected team in coop/survival (!ji in chat to join infected, !js to join survivors)"
-"l4d_infectedbots_ghost_spawn", "0", "If 1, infected players in coop/survival will spawn as ghosts"
 "l4d_infectedbots_coop_versus_announce", "1", "If 1, clients will be announced to on how to join the infected team"
 "l4d_infectedbots_coordination", "0", "If 1, bots will only spawn when all other bot spawn timers are at zero"
 "l4d_infectedbots_infhud_enable", "1", "Toggle whether Infected HUD is active or not."
