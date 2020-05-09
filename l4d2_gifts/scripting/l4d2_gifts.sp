@@ -756,8 +756,7 @@ void NotifyGift(int client, int type, int gift = -1)
 	{
 		Client_PrintToChatAll(false, "%s %t", TAG_GIFT, "Spawn Gift Standard Not Points", client);
 		
-		EmitSoundToAll(SND_REWARD1);
-		AddCollect(client, type);
+		PlaySound(client,SND_REWARD1);
 	}
 	else if(type == TYPE_SPECIAL)
 	{
@@ -774,8 +773,7 @@ void NotifyGift(int client, int type, int gift = -1)
 			GiveWeapon(client, weapons_name[index][0]);
 			Client_PrintToChatAll(false, "%s %t", TAG_GIFT, "Spawn Gift Special Not Points", client, weapons_name[index][1]);
 		}
-		EmitSoundToAll(SND_REWARD2);
-
+		PlaySound(client,SND_REWARD2);
 		AddCollect(client, type);
 	}
 }
@@ -1031,4 +1029,9 @@ void GetColor(const char[] str_color, int color[3])
 stock int GetURandomIntRange(int min, int max)
 {
 	return (GetURandomInt() % (max-min+1)) + min;
+}
+
+void PlaySound(int client,char[] sSoundName)
+{
+	EmitSoundToAll(sSoundName, client, SNDCHAN_AUTO, SNDLEVEL_AIRCRAFT, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, -1, NULL_VECTOR, NULL_VECTOR, true, 0.0);
 }
