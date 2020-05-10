@@ -1,6 +1,6 @@
 /********************************************************************************************
 * Plugin	: L4D/L4D2 InfectedBots (Versus Coop/Coop Versus)
-* Version	: 2.2.2
+* Version	: 2.2.3
 * Game		: Left 4 Dead 1 & 2
 * Author	: djromero (SkyDavid, David) and MI 5 and Harry Potter
 * Testers	: Myself, MI 5
@@ -10,6 +10,9 @@
 * 
 * WARNING	: Please use sourcemod's latest 1.8 branch snapshot.
 * 
+* Version 2.2.3
+	   - Add Convar "l4d_infectedbots_adjust_tankhealth_enable"
+
 * Version 2.2.2
 	   - Fixed l4d_infectedbots_safe_spawn error
 	   - Add Convar "l4d_infectedbots_tank_spawn_probability"
@@ -461,7 +464,7 @@
 
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "2.2.2"
+#define PLUGIN_VERSION "2.2.3"
 
 #define DEBUGSERVER 0
 #define DEBUGCLIENTS 0
@@ -571,6 +574,7 @@ ConVar h_VersusCoop;
 ConVar h_AdjustSpawnTimes;
 ConVar h_InfHUD;
 ConVar h_Announce ;
+ConVar h_TankHealthAdjust;
 ConVar h_TankHealth;
 ConVar h_GameMode; 
 ConVar h_Difficulty; 
@@ -697,6 +701,8 @@ public void OnPluginStart()
 	h_MaxPlayerZombies = CreateConVar("l4d_infectedbots_max_specials", "2", "Defines how many special infected can be on the map on all gamemodes(does not count witch on all gamemodes, does not count tank in coop/survival)", FCVAR_SPONLY, true, 0.0); 
 	h_PlayerAddZombiesScale = CreateConVar("l4d_infectedbots_add_specials_scale", "2", "If server has more than 4+ players, how many special infected = 'max_specials' + (players - 4) ÷ 'add_specials_scale' × 'add_specials'.", FCVAR_SPONLY, true, 1.0); 
 	h_PlayerAddZombies = CreateConVar("l4d_infectedbots_add_specials", "2", "If server has more than 4+ players, increase the certain value to 'l4d_infectedbots_max_specials' each 'l4d_infectedbots_add_specials_scale' players joins", FCVAR_SPONLY, true, 0.0); 
+
+	h_TankHealthAdjust = CreateConVar("l4d_infectedbots_adjust_tankhealth_enable", "1", "Adjust and overrides tank health by this plugin?", FCVAR_SPONLY, true, 0.0,true, 1.0); 
 	h_TankHealth = CreateConVar("l4d_infectedbots_default_tankhealth", "4000", "Sets Default Health for Tank", FCVAR_SPONLY, true, 1.0); 
 	h_PlayerAddTankHealthScale = CreateConVar("l4d_infectedbots_add_tankhealth_scale", "1", "If server has more than 4+ players, how many Tank Health = 'default_tankhealth' + (players - 4) ÷ 'add_tankhealth_scale' × 'add_tankhealth'.", FCVAR_SPONLY, true, 1.0); 
 	h_PlayerAddTankHealth = CreateConVar("l4d_infectedbots_add_tankhealth", "600", "If server has more than 4+ players, increase the certain value to 'l4d_infectedbots_default_tankhealth' each 'l4d_infectedbots_add_tankhealth_scale' players joins", FCVAR_SPONLY, true, 0.0); 
@@ -751,7 +757,7 @@ public void OnPluginStart()
 	MaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
 	h_PlayerAddZombies.AddChangeHook(ConVarPlayerAddZombies);
 	g_PlayerAddZombies = GetConVarInt(h_PlayerAddZombies);
-	h_TankHealth.AddChangeHook(ConVarTankHealth);
+	h_TankHealthAdjust.AddChangeHook(ConVarTankHealthAdjust);
 	h_PlayerAddTankHealth.AddChangeHook(ConVarPlayerAddTankHealth);
 	g_PlayerAddTankHealth = GetConVarInt(h_PlayerAddTankHealth);
 	h_DirectorSpawn.AddChangeHook(ConVarDirectorSpawn);
@@ -948,9 +954,9 @@ public void ConVarPlayerAddZombies(Handle convar, const char[] oldValue, const c
 	g_PlayerAddZombies = GetConVarInt(h_PlayerAddZombies);
 }
 
-public void ConVarTankHealth(Handle convar, const char[] oldValue, const char[] newValue)
+public void ConVarTankHealthAdjust(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	SetConVarInt(FindConVar("z_tank_health"), GetConVarInt(h_TankHealth));
+	if(GetConVarBool(h_TankHealthAdjust)) SetConVarInt(FindConVar("z_tank_health"), GetConVarInt(h_TankHealth));
 }
 
 public void ConVarPlayerAddTankHealth(Handle convar, const char[] oldValue, const char[] newValue)
@@ -2744,7 +2750,7 @@ public Action ColdDown_Timer(Handle timer)
 	{
 		int addition = iSurplayers - 4;
 		SetConVarInt(h_MaxPlayerZombies, i_OriginalMaxPlayerZombies + g_PlayerAddZombies * (addition/GetConVarInt(h_PlayerAddZombiesScale)));
-		SetConVarInt(cvarZombieHP[6], GetConVarInt(h_TankHealth) + g_PlayerAddTankHealth * (addition/GetConVarInt(h_PlayerAddTankHealthScale)));
+		if(GetConVarBool(h_TankHealthAdjust)) SetConVarInt(cvarZombieHP[6], GetConVarInt(h_TankHealth) + g_PlayerAddTankHealth * (addition/GetConVarInt(h_PlayerAddTankHealthScale)));
 		MaxPlayerZombies = GetConVarInt(h_MaxPlayerZombies);
 		SetConVarInt(FindConVar("z_max_player_zombies"), MaxPlayerZombies);
 		iPlayersInSurvivorTeam = iSurplayers;
