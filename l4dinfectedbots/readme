@@ -13,7 +13,7 @@ Spawns infected bots in versus, allows playable special infected in coop/surviva
 "l4d_infectedbots_charger_limit", "2", "Sets the limit for chargers spawned by the plugin"
 "l4d_infectedbots_hunter_limit", "2", "Sets the limit for hunters spawned by the plugin"
 "l4d_infectedbots_hunter_limit", "2", "Sets the limit for hunters spawned by the plugin"
-"l4d_infectedbots_max_specials", "2", "Defines how many special infected can be on the map on all gamemodes(does not count tank and witch)"
+"l4d_infectedbots_max_specials", "2", "Defines how many special infected can be on the map on all gamemodes(does not count witch on all gamemodes, does not count tank in coop/survival)"
 "l4d_infectedbots_add_specials_scale", "2", "If server has more than 4+ players, how many special infected = 'max_specials' + (players - 4) ÷ 'add_specials_scale' × 'add_specials'."
 "l4d_infectedbots_add_specials", "2", "If server has more than 4+ players, increase the certain value to 'l4d_infectedbots_max_specials' each 'l4d_infectedbots_add_specials_scale' players joins"
 "l4d_infectedbots_default_tankhealth", "4000", "Sets Default Health for Tank", FCVAR_SPONLY, true, 1.0); 
@@ -37,19 +37,86 @@ Spawns infected bots in versus, allows playable special infected in coop/surviva
 "l4d_infectedbots_versus_coop", "0", "If 1, The plugin will force all players to the infected side against the survivor AI for every round and map in versus/scavenge"
 "l4d_infectedbots_adjust_spawn_times", "1", "If 1, The plugin will adjust spawn timers depending on the gamemode"
 "l4d_infectedbots_adjust_reduced_spawn_times_on_player", "1", "Reduce certain value to maximum spawn timer based per alive player"
-"l4d_infectedbots_safe_spawn", "1", "If 1, just spawn special infected whether survivors leave starting safe room or not"
+"l4d_infectedbots_safe_spawn", "1", "If 1, spawn special infected before survivors leave starting safe room"
 "l4d_infectedbots_spawn_range_min", "550", "The minimum of spawn range for infected"
 "l4d_infectedbots_spawn_range_max", "1500", "The maximum of spawn range for infected"
 "l4d_infectedbots_spawn_range_final", "300", "The minimum of spawn range for infected in final stage rescue"
 "l4d_infectedbots_witch_spawn_time_max", "120.0", "Sets the max spawn time for witch spawned by the plugin in seconds."
-"l4d_infectedbots_witch_spawn_time_mix", "90.0", "Sets the mix spawn time for witch spawned by the plugin in seconds."
+"l4d_infectedbots_witch_spawn_time_min", "90.0", "Sets the mix spawn time for witch spawned by the plugin in seconds."
 "l4d_infectedbots_witch_spawn_final", "0", "If 1, still spawn witch in final stage rescue"
 "l4d_infectedbots_witch_lifespan", "200", "Amount of seconds before a witch is kicked"
-	
+"l4d_infectedbots_tank_spawn_probability", "5", "When each time spawn S.I., how much percent of chance to spawn tank"
+
+-How to set the correct Convar-
+1. Set special limit
+-l4d_infectedbots_charger_limit
+-l4d_infectedbots_boomer_limit 
+-l4d_infectedbots_hunter_limit
+-l4d_infectedbots_jockey_limit
+-l4d_infectedbots_smoker_limit
+-l4d_infectedbots_spitter_limit
+These 6 values combined together must greater than or equal to 
+-l4d_infectedbots_max_specials
+Note that this max limit does not count tank and witch in coop/survival, but it does count tank in versus
+
+2. adjust special limit if 5+ players
+For example.
+-l4d_infectedbots_max_specials "4"
+-l4d_infectedbots_add_specials "2"
+-l4d_infectedbots_add_specials_scale "3"
+This means that if server has 5+ survivors, each 3 players join, max specials limit plus 2
+So if there are 10 survivors, specials limit: 4+2+2 = 8
+
+3. adjust tank health if 5+ players
+For example0
+-l4d_infectedbots_default_tankhealth "4000"
+-l4d_infectedbots_add_tankhealth "1200"
+-l4d_infectedbots_add_tankhealth_scale "3"
+This means that if server has 5+ survivors, each 3 players join, tank health increase 1200hp
+So if there are 10 survivors, tank health: 4000+1200+1200 = 6400hp
+
+4.adjust special infected spawn timer
+Reduce certain value to spawn timer based per alive player,For example
+-l4d_infectedbots_spawn_time_max "60"
+-l4d_infectedbots_spawn_time_min "30"
+-l4d_infectedbots_adjust_spawn_times "1"
+-l4d_infectedbots_adjust_reduced_spawn_times_on_player "2"
+If there are 5 "ALIVE" survivors in game, special infected spawn timer[max: 60-(5*2) = 50, min: 30-(5*2) = 20], to close this feature, just set 
+-l4d_infectedbots_adjust_spawn_times "0"
+
+5.how to spawn tank
+For example.
+-l4d_infectedbots_tank_limit "2"
+-l4d_infectedbots_tank_spawn_probability "5"
+This means that each time 5% chance to spawn tank instead of infected bot. 
+Note that if tank limit is reached or is 0, still don't spawn tank(does not affect director tanks)
+
+6. Play infected team in coop/survival
+For example.
+-l4d_infectedbots_coop_versus "1"
+-l4d_infectedbots_admin_coop_versus "1"
+-l4d_infectedbots_coop_versus_human_limit "2"
+Only adm can join the infected team, and there are only 2 infected team slots for real player
+
+If you want everyone can join infected, then set
+-l4d_infectedbots_admin_coop_versus "0"
+
+make tank always be playable by real infected player
+-l4d_infectedbots_coop_versus_tank_playable "1" 
+
+7. Spawn range
+Must be careful to adjust, these convars will also affect common zombie spawn range.
+-l4d_infectedbots_spawn_range_max "1500"
+-l4d_infectedbots_spawn_range_min "550"
+-l4d_infectedbots_spawn_range_final "300" 
+
+Make infected player spawn near very close by survivors for better gaming experience
+-l4d_infectedbots_spawn_range_min "0" 
+
 -Command-
 !ji - JoinInfected
 !js - JoinSurvivors
 (infected only) !infhud - toggle HUD on/off for themselves
-(infected only) !zs - suicide myself (if infected get stuck or somthing)
+(infected only) !zs - suicide infected player himself (if infected get stuck or something)
 (adm only) !timer - control special zombies spawn timer
-(adm only) !zlimit - control special zombies spawn timer
+(adm only) !zlimit - control max special zombies limit

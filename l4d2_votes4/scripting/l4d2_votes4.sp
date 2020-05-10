@@ -208,6 +208,7 @@ public OnClientPutInServer(client)
 public OnMapStart()
 {
 	isMapRestartPending = false;
+	MapCountdownTimer = INVALID_HANDLE;
 	
 	ParseCampaigns();
 	
