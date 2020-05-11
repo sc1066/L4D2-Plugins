@@ -3,20 +3,20 @@
 #include <sdktools>
 #include <glow>
 
-#define PLUGIN_VERSION "1.8"
+#define PLUGIN_VERSION "1.9"
 
 #define UNLOCK 0
 #define LOCK 1
 
-ConVar lsAnnounce, lsAntiFarmDuration, lsDuration, lsMobs, lsMenu, lsTankDemolition, lsType,
+ConVar lsAnnounce, lsAntiFarmDuration, lsDuration, lsMobs, lsTankDemolition, lsType, lsNearByAllSurvivor,
 	cvarGameMode;
 
 int iAntiFarmDuration, iDuration, iMobs, iType, iDoorStatus, iCheckpointDoor, iSystemTime;
 float fDoorSpeed;
-bool bAntiFarmInit, bLockdownInit, bLDFinished, bChoiceStarted, bAnnounce, bMenu, bTankDemolition;
+bool bAntiFarmInit, bLockdownInit, bLDFinished, bChoiceStarted, bAnnounce, bTankDemolition, bNearByAllSurvivor;
 char sGameMode[16], sKeyMan[128], sLastName[2048][128];
 Handle hAntiFarmTime = null, hLockdownTime = null;
-bool bSpawnTank;
+bool bSpawnTank,bSurvivorsAssembleAlready;
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -49,25 +49,25 @@ public void OnPluginStart()
 	lsAnnounce = CreateConVar("lockdown_system-l4d2_announce", "1", "Enable/Disable Announcements", FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	lsAntiFarmDuration = CreateConVar("lockdown_system-l4d2_anti-farm_duration", "300", "Duration Of Anti-Farm", FCVAR_SPONLY|FCVAR_NOTIFY);
 	lsDuration = CreateConVar("lockdown_system-l4d2_duration", "150", "Duration Of Lockdown", FCVAR_SPONLY|FCVAR_NOTIFY);
-	lsMobs = CreateConVar("lockdown_system-l4d2_mobs", "5", "Number Of Mobs To Spawn", FCVAR_SPONLY|FCVAR_NOTIFY, true, 1.0, true, 10.0);
-	lsMenu = CreateConVar("lockdown_system-l4d2_menu", "0", "Enable/Disable Menu", FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);
+	lsMobs = CreateConVar("lockdown_system-l4d2_mobs", "10", "Number Of Mobs To Spawn", FCVAR_SPONLY|FCVAR_NOTIFY, true, 1.0, true, 10.0);
 	lsTankDemolition = CreateConVar("lockdown_system-l4d2_tank_demolition", "1", "Enable/Disable Tank Demolition, server will spawn tank before door open and after door open", FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	lsType = CreateConVar("lockdown_system-l4d2_type", "3", "Lockdown Type: 0=Random, 1=Improved, 2 & 3=Default", FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 3.0);
-	
+	lsNearByAllSurvivor = CreateConVar("lockdown_system-l4d2_all_survivors_near_saferoom", "1", "If 1, all survivors must assemble near the saferoom door before open.", FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);
+
 	iAntiFarmDuration = lsAntiFarmDuration.IntValue;
 	iDuration = lsDuration.IntValue;
 	iMobs = lsMobs.IntValue;
 	
 	bAnnounce = lsAnnounce.BoolValue;
-	bMenu = lsMenu.BoolValue;
 	bTankDemolition = lsTankDemolition.BoolValue;
+	bNearByAllSurvivor = lsNearByAllSurvivor.BoolValue;
 	
 	lsAnnounce.AddChangeHook(OnLSCVarsChanged);
 	lsAntiFarmDuration.AddChangeHook(OnLSCVarsChanged);
 	lsDuration.AddChangeHook(OnLSCVarsChanged);
 	lsMobs.AddChangeHook(OnLSCVarsChanged);
-	lsMenu.AddChangeHook(OnLSCVarsChanged);
 	lsTankDemolition.AddChangeHook(OnLSCVarsChanged);
+	lsNearByAllSurvivor.AddChangeHook(OnLSCVarsChanged);
 	
 	AutoExecConfig(true, "lockdown_system-l4d2");
 	
@@ -89,8 +89,8 @@ public void OnLSCVarsChanged(ConVar cvar, const char[] sOldValue, const char[] s
 	iMobs = lsMobs.IntValue;
 	
 	bAnnounce = lsAnnounce.BoolValue;
-	bMenu = lsMenu.BoolValue;
 	bTankDemolition = lsTankDemolition.BoolValue;
+	bNearByAllSurvivor = lsNearByAllSurvivor.BoolValue;
 	
 	if (IsValidEnt(iCheckpointDoor))
 	{
@@ -167,10 +167,7 @@ public void OnRoundStart(Event event, const char[] name, bool dontBroadcast)
 	bLockdownInit = false;
 	bLDFinished = false;
 	bSpawnTank = false;
-	if (bMenu)
-	{
-		bChoiceStarted = false;
-	}
+	bSurvivorsAssembleAlready = false;
 	
 	InitDoor();
 }
@@ -290,105 +287,86 @@ public Action OnPlayerUsePre(Event event, const char[] name, bool dontBroadcast)
 			
 			if (iDoorStatus != UNLOCK)
 			{
-				if (bMenu)
+				if(bNearByAllSurvivor && !bSurvivorsAssembleAlready)
 				{
-					if (bChoiceStarted)
-					{
-						return Plugin_Continue;
-					}
-					
-					if (bAntiFarmInit || bLDFinished || bLockdownInit)
-					{
-						bChoiceStarted = true;
-						return Plugin_Continue;
-					}
-					
-					bChoiceStarted = true;
-					GetClientName(user, sKeyMan, sizeof(sKeyMan));
-					
-					Menu mSystemChoice = new Menu(mSystemChoiceHandler, MENU_ACTIONS_DEFAULT|MenuAction_VoteEnd);
-					mSystemChoice.SetTitle("Choose Desired System:");
-					
-					mSystemChoice.AddItem("", "Anti-Farm");
-					mSystemChoice.AddItem("", "Lockdown");
-					
-					mSystemChoice.Pagination = MENU_NO_PAGINATION;
-					
-					int iPlayers, iHumans[MAXPLAYERS+1];
+					float clientOrigin[3];
+					float doorOrigin[3];
+					GetEntPropVector(used, Prop_Send, "m_vecOrigin", doorOrigin);
 					for (int i = 1; i <= MaxClients; i++)
 					{
-						if (!IsClientInGame(i) || GetClientTeam(i) != 2 || IsFakeClient(i))
+						if(IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i))
 						{
-							continue;
+							GetClientAbsOrigin(i, clientOrigin);
+							if (GetVectorDistance(clientOrigin, doorOrigin, true) > 1000*1000)
+							{
+								PrintHintText(user, "[LS] 所有倖存者必須集合才能打開安全門！");
+								PrintCenterTextAll("[LS] 所有倖存者必須集合才能打開安全門！");
+								return Plugin_Continue;
+							}
 						}
-						
-						iHumans[iPlayers++] = i;
+					}
+					bSurvivorsAssembleAlready = true;
+				}
+
+				if(bTankDemolition && !bSpawnTank) 
+				{
+					ExecuteSpawn(user, "tank auto", 2);
+					bSpawnTank = true;
+				}
+				
+				if (GetTankCount() > 0)
+				{
+					if (bLDFinished || bLockdownInit)
+					{
+						bAntiFarmInit = true;
+						return Plugin_Continue;
 					}
 					
-					mSystemChoice.DisplayVote(iHumans, iPlayers, 30);
+					
+					if (!bAntiFarmInit)
+					{
+						bAntiFarmInit = true;
+						iSystemTime = iAntiFarmDuration;
+						
+						PrintHintText(user, "[LS] Tank還活著，請先殺了Tank！");
+						EmitSoundToAll("doors/latchlocked2.wav", used, SNDCHAN_AUTO);
+
+						GetClientName(user, sKeyMan, sizeof(sKeyMan));
+						
+						ExecuteSpawn(user, "mob auto", iMobs);
+						
+						if (hAntiFarmTime == null)
+						{
+							hAntiFarmTime = CreateTimer(float(iAntiFarmDuration) + 1.0, EndAntiFarm);
+						}
+						CreateTimer(1.0, CheckAntiFarm, used, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+					}
 				}
 				else
 				{
-					if(bTankDemolition && !bSpawnTank) 
+					if (bAntiFarmInit)
 					{
-						StripAndExecuteClientCommand(Misc_GetAnyClient(), "z_spawn_old", "tank auto");
-						bSpawnTank = true;
+						return Plugin_Continue;
 					}
 					
-					if (GetTankCount() > 0)
+					if (!bLockdownInit)
 					{
-						if (bLDFinished || bLockdownInit)
+						bLockdownInit = true;
+						
+						iSystemTime = iDuration;
+						GetClientName(user, sKeyMan, sizeof(sKeyMan));
+						
+						ExecuteSpawn(user, "mob auto", iMobs);
+						if (iType == 1)
 						{
-							bAntiFarmInit = true;
-							return Plugin_Continue;
+							ControlDoor(iCheckpointDoor, UNLOCK);
 						}
 						
-						
-						if (!bAntiFarmInit)
+						if (hLockdownTime == null)
 						{
-							bAntiFarmInit = true;
-							iSystemTime = iAntiFarmDuration;
-							
-							PrintHintText(user, "[LS] Tank還活著，請先殺了Tank！");
-							EmitSoundToAll("doors/latchlocked2.wav", used, SNDCHAN_AUTO);
-
-							GetClientName(user, sKeyMan, sizeof(sKeyMan));
-							
-							ExecuteSpawn(user, "mob auto", iMobs);
-							
-							if (hAntiFarmTime == null)
-							{
-								hAntiFarmTime = CreateTimer(float(iAntiFarmDuration) + 1.0, EndAntiFarm);
-							}
-							CreateTimer(1.0, CheckAntiFarm, used, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
+							hLockdownTime = CreateTimer(float(iDuration) + 1.0, EndLockdown);
 						}
-					}
-					else
-					{
-						if (bAntiFarmInit)
-						{
-							return Plugin_Continue;
-						}
-						
-						if (!bLockdownInit)
-						{
-							bLockdownInit = true;
-							
-							iSystemTime = iDuration;
-							GetClientName(user, sKeyMan, sizeof(sKeyMan));
-							
-							ExecuteSpawn(user, "mob auto", iMobs);
-							if (iType == 1)
-							{
-								ControlDoor(iCheckpointDoor, UNLOCK);
-							}
-							
-							if (hLockdownTime == null)
-							{
-								hLockdownTime = CreateTimer(float(iDuration) + 1.0, EndLockdown);
-							}
-							CreateTimer(1.0, CheckLockdown, used, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
-						}
+						CreateTimer(1.0, CheckLockdown, used, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 					}
 				}
 			}
@@ -602,10 +580,6 @@ public void OnMapEnd()
 		bAntiFarmInit = false;
 		bLockdownInit = false;
 		bLDFinished = false;
-		if (bMenu)
-		{
-			bChoiceStarted = false;
-		}
 		
 		if (iCheckpointDoor != 0)
 		{
@@ -874,24 +848,4 @@ stock void ExecuteSpawn(int client, char[] sInfected, int iCount)
 		FakeClientCommand(client, "%s %s", sCommand, sInfected);
 	}
 	SetCommandFlags(sCommand, iFlags);
-}
-
-void StripAndExecuteClientCommand(int client, char[] command, char[] arguments) {
-	new flags = GetCommandFlags(command);
-	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
-	FakeClientCommand(client, "%s %s", command, arguments);
-	SetCommandFlags(command, flags);
-}
-
-int Misc_GetAnyClient() {
-	for (new i = 1; i <= MaxClients; i++)
-	{
-		if (IsClientInGame(i))
-		{
-			// PrintToChatAll("Using client %L for command", i);
-			return i;
-		}
-	}
-	
-	return 0;
 }

@@ -3050,7 +3050,7 @@ public Action KickWitch_Timer(Handle timer, int entity)
 		GetEntPropVector(entity, Prop_Send, "m_vecOrigin", witchOrigin);
 		for (int i = 1; i <= MaxClients; i++)
 		{
-			if(IsClientInGame(i) && GetClientTeam(i) == TEAM_SURVIVORS)
+			if(IsClientInGame(i) && GetClientTeam(i) == TEAM_SURVIVORS && IsPlayerAlive(i))
 			{
 				GetClientAbsOrigin(i, clientOrigin);
 				if (GetVectorDistance(clientOrigin, witchOrigin, true) < 1500*1500)
@@ -4316,7 +4316,6 @@ bool LeftStartArea()
 
 public void OnPluginEnd()
 {
-
 	for( int i = 1; i <= MaxClients; i++ )
 		DeleteLight(i);
 
