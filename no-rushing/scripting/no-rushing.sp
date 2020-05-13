@@ -57,6 +57,7 @@ new i_SurvivorsRequired;
 new i_IgnoreIncapacitated;
 new i_IgnoreStraggler;
 new i_InfractionResult;
+new bool:b_LeftSaveRoom;
 
 public OnPluginStart()
 {
@@ -161,7 +162,7 @@ public OnClientDisconnect(client)
 	}
 }
 
-public OnMapEnd()
+public OnMapStart()
 {
 	IsRoundLive	= false;
 }
@@ -170,8 +171,7 @@ public Action:OnFunctionStart(Handle:event, const String:name[], bool:dontBroadc
 {
 	if (GameMode != 3 /*&& IsPluginLoaded*/ && !IsRoundLive)
 	{
-		IsRoundLive	= true;
-		CreateTimer(1.0, Timer_DistanceCheck, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0, PlayerLeftStart, _, TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
@@ -499,4 +499,49 @@ public ConVarIgnoreStraggler(Handle:convar, const String:oldValue[], const Strin
 public ConVarInfractionResult(Handle:convar, const String:oldValue[], const String:newValue[])
 {
 	i_InfractionResult = GetConVarInt(h_InfractionResult);
+}
+
+public Action PlayerLeftStart(Handle Timer)
+{
+	if (LeftStartArea())
+	{	
+		if (!b_LeftSaveRoom)
+		{
+			IsRoundLive	= true;
+			b_LeftSaveRoom = true;
+			CreateTimer(1.0, Timer_DistanceCheck, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+		}
+	}
+	else
+	{
+		CreateTimer(1.0, PlayerLeftStart, _, TIMER_FLAG_NO_MAPCHANGE);
+	}
+	return Plugin_Continue;
+}
+bool:LeftStartArea()
+{
+	new ent = -1, maxents = GetMaxEntities();
+	for (new i = MaxClients+1; i <= maxents; i++)
+	{
+		if (IsValidEntity(i))
+		{
+			char netclass[64];
+			GetEntityNetClass(i, netclass, sizeof(netclass));
+			
+			if (StrEqual(netclass, "CTerrorPlayerResource"))
+			{
+				ent = i;
+				break;
+			}
+		}
+	}
+	
+	if (ent > -1)
+	{
+		if (GetEntProp(ent, Prop_Send, "m_hasAnySurvivorLeftSafeArea"))
+		{
+			return true;
+		}
+	}
+	return false;
 }
