@@ -30,7 +30,7 @@ public Plugin:myinfo =
 new GameMode; //1:coop/realism, 2:versus, 3:survival
 
 //new bool:IsPluginLoaded;
-new bool:IsRoundLive = false;
+new bool:b_LeftSaveRoom = false;
 new bool:Ensnared[MAXPLAYERS+1];
 new bool:DistanceWarning[MAXPLAYERS+1];
 new bool:IsLagging[MAXPLAYERS+1];
@@ -57,7 +57,6 @@ new i_SurvivorsRequired;
 new i_IgnoreIncapacitated;
 new i_IgnoreStraggler;
 new i_InfractionResult;
-new bool:b_LeftSaveRoom;
 
 public OnPluginStart()
 {
@@ -164,12 +163,12 @@ public OnClientDisconnect(client)
 
 public OnMapStart()
 {
-	IsRoundLive	= false;
+	b_LeftSaveRoom	= false;
 }
 
 public Action:OnFunctionStart(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if (GameMode != 3 /*&& IsPluginLoaded*/ && !IsRoundLive)
+	if (GameMode != 3 /*&& IsPluginLoaded*/)
 	{
 		CreateTimer(1.0, PlayerLeftStart, _, TIMER_FLAG_NO_MAPCHANGE);
 	}
@@ -179,7 +178,7 @@ public Action:OnFunctionEnd(Handle:event, const String:name[], bool:dontBroadcas
 {
 	if (GameMode != 3 /*&& IsPluginLoaded*/)
 	{
-		IsRoundLive	= false;
+		b_LeftSaveRoom = false;
 		for (new i = 1; i <= MaxClients; i++)
 		{
 			if (IsClientConnected(i) && IsClientInGame(i))
@@ -197,7 +196,7 @@ public Action:OnFunctionEnd(Handle:event, const String:name[], bool:dontBroadcas
 public Action:Timer_DistanceCheck(Handle:timer)
 {
 	
-	if (!IsRoundLive)
+	if (!b_LeftSaveRoom)
 	{
 		return Plugin_Stop;
 	}
@@ -287,7 +286,7 @@ public Action:Timer_DistanceCheck(Handle:timer)
 
 public Action:Timer_IsEnsnared(Handle:timer, any:client)
 {
-	if (IsRoundLive && !IsSurvival() && IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == TEAM_SURVIVOR && IsPlayerAlive(client))
+	if (b_LeftSaveRoom && !IsSurvival() && IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == TEAM_SURVIVOR && IsPlayerAlive(client))
 	{
 		if (L4D2_GetInfectedAttacker(client) != -1 || IsIncapacitated(client) || IsClientLaggingBehind(client))
 		{
@@ -507,7 +506,6 @@ public Action PlayerLeftStart(Handle Timer)
 	{	
 		if (!b_LeftSaveRoom)
 		{
-			IsRoundLive	= true;
 			b_LeftSaveRoom = true;
 			CreateTimer(1.0, Timer_DistanceCheck, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 		}

@@ -56,6 +56,7 @@ OR use the [Mission and Weapons - Info Editor]("https://forums.alliedmods.net/sh
 "l4d2_gifts_enabled",	"1", "Enable gifts 0: Disable, 1: Enable"
 "l4d2_gifts_giflife",	"30",	"How long the gift stay on ground (seconds)"
 "l4d2_gifts_chance", "40",	"Chance (%) of infected drop gift."
+"l4d2_gifts_chance2", "100",	"Chance (%) of tank and witch drop gift."
 "l4d2_gifts_probabilityE", "0", "Probability for gifts standard (animals and other objects) with respect to chance of infected drop gift."
 "l4d2_gifts_probabilityS", "100", "Probability for gift special with respect to chance of infected drop gift."
 "l4d2_gifts_maxcollectMap", "0", "Maximum of gifts that all survivors can pick up per map [0 = Disabled]"
