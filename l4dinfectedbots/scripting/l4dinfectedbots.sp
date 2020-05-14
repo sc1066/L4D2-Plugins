@@ -2039,7 +2039,7 @@ public Action Console_ZLimit(int client, int args)
 
 			SetConVarInt(FindConVar("l4d_infectedbots_max_specials"), newlimit);
 			i_OriginalMaxPlayerZombies = newlimit;
-			Client_PrintToChatAll(false, "[{G}TS{N}] %N: %t", client, "Special Infected Limit has been changed",newlimit);	
+			Client_PrintToChatAll(false, "[{G}TS{N}] {L}%N{N}: %t", client, "Special Infected Limit has been changed",newlimit);	
 		}
 		else
 		{
