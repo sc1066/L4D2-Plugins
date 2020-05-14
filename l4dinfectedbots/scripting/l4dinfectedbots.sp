@@ -471,7 +471,7 @@
 
 #pragma semicolon 1
 #pragma newdecls required //強制1.7以後的新語法
-#define PLUGIN_VERSION "2.2.3"
+#define PLUGIN_VERSION "2.2.4"
 
 #define DEBUGSERVER 0
 #define DEBUGCLIENTS 0
