@@ -271,7 +271,7 @@ public Plugin myinfo =
 {
 	name = "[L4D2] Gifts Drop & Spawn",
 	author = "Aceleraci�n & Harry Potter",
-	description = "Drop gifts (press E to earn reward) when a special infected or a witch killed by survivor.",
+	description = "Drop gifts (press E or touch to earn reward) when a special infected or a witch killed by survivor.",
 	version = PLUGIN_VERSION,
 	url = "https://forums.alliedmods.net/showthread.php?t=302731"
 }
@@ -1014,7 +1014,7 @@ public Action ColdDown( Handle timer, any ref)
 
 public void OnTouch(int gift, int other)
 {
-	if (IsValidEntity(gift) && IsValidClient(other) && 
+	if (IsValidClient(other) && !IsFakeClient(other) &&
 	GetClientTeam(other) == 2 && IsPlayerAlive(other) &&
 	!GetEntProp(other, Prop_Send, "m_isHangingFromLedge") &&
 	!GetEntProp(other, Prop_Send, "m_isIncapacitated"))
@@ -1038,6 +1038,7 @@ public void OnTouch(int gift, int other)
 		AcceptEntityInput(gift, "kill");
 		gifts_collected_map += 1;
 		gifts_collected_round += 1;
+		SDKUnhook(gift, SDKHook_Touch, OnTouch);
 	}
 } 
 

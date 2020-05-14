@@ -1,6 +1,6 @@
-Drop gifts (press E to earn reward) when a special infected or a witch killed by survivor.
+Drop gifts (press E touch to earn reward) when a special infected or a witch killed by survivor.
 
--46 items that could drop-
+-46 items that S.I. could drop-
 {"defibrillator","電擊器"},
 {"first_aid_kit","治療包"},
 {"pain_pills", "止痛藥丸"},
@@ -47,6 +47,16 @@ Drop gifts (press E to earn reward) when a special infected or a witch killed by
 {"knife", "小刀"},
 {"golfclub", "高爾夫球棒"},
 {"", "空(謝謝惠顧)"}
+
+-7 items that Tank/Witch could drop-
+{"grenade_launcher","榴彈發射器"},
+{"rifle_m60", "M60機關槍"},
+{"defibrillator","電擊器"},
+{"first_aid_kit","治療包"},
+{"pain_pills", "止痛藥丸"},
+{"adrenaline", "腎上腺素"},
+{"health", "滿血生命值"}
+
 
 -Require-
 To unlock all melee weapons in all official campaigns, you MUST get the [Melee Spawn Control extension](https://forums.alliedmods.net/showthread.php?t=222535).
