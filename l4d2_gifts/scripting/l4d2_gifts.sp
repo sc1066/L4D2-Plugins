@@ -1,4 +1,4 @@
-#define PLUGIN_VERSION		"1.4.0"
+#define PLUGIN_VERSION		"1.4.1"
 
 /*
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -11,6 +11,9 @@
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	Change Log:
+1.4.1 (15-5-2020)
+	- Only special and special2 gift
+
 1.4.0 (14-5-2020)
 	- Add Convar: "l4d2_gifts_chance2", "100",	"Chance (%) of tank and witch drop gift."
 
@@ -136,11 +139,10 @@
 #define	MAX_GIFTS			20
 #define MAX_STRING_WIDTH	64
 #define MAX_TYPEGIFTS		3
-#define TYPE_ESTANDAR		0
-#define TYPE_SPECIAL		1
-#define TYPE_SPECIAL2		2
+#define TYPE_SPECIAL		2
+#define TYPE_SPECIAL2		1
 #define MAX_SPECIALITEMS	46
-#define MAX_SPECIALITEMS2	7
+#define MAX_SPECIALITEMS2	6
 
 #define TEAM_SURVIVOR		2
 #define TEAM_INFECTED		3
@@ -168,20 +170,17 @@ ConVar cvar_gift_enable;
 ConVar cvar_gift_life;
 ConVar cvar_gift_chance;
 ConVar cvar_gift_chance2;
-ConVar cvar_gift_probabilityE;
-ConVar cvar_gift_probabilityS;
 ConVar cvar_gift_maxcollectMap;
 ConVar cvar_gift_maxcollectRound;
 
 char weapons_name2[MAX_SPECIALITEMS2][2][50] = 
 {
-	{"grenade_launcher","榴彈發射器"},
 	{"rifle_m60", "M60機關槍"},
-	{"defibrillator","電擊器"},
 	{"first_aid_kit","治療包"},
 	{"pain_pills", "止痛藥丸"},
 	{"adrenaline", "腎上腺素"},
-	{"health", "滿血生命值"}
+	{"health", "滿血生命值"},
+	{"vomitjar", "膽汁"},
 };
 
 char weapons_name[MAX_SPECIALITEMS][2][50] = 
@@ -249,14 +248,11 @@ int g_GifLife[2000];
 char g_sGifType[2000][10];
 int g_GifEntIndex[2000];
 float g_GiftMov[2000];
-char g_sGifSWeapon[2000][50];
 
 bool bGiftEnable;
 int iGiftLife;
 int iGiftChance;
 int iGiftChance2;
-int iGiftEProbability;
-int iGiftSProbability;
 int iGiftMaxMap;
 int iGiftMaxRound;
 bool g_RoundEnd;
@@ -283,10 +279,8 @@ public void OnPluginStart()
 	CreateConVar("l4d2_gifts", PLUGIN_VERSION, "Plugin version", 0 );
 	cvar_gift_enable = CreateConVar("l4d2_gifts_enabled",	"1", "Enable gifts 0: Disable, 1: Enable", PLUGIN_FCVAR, true, 0.0, true, 1.0);
 	cvar_gift_life = CreateConVar("l4d2_gifts_giflife",	"30",	"How long the gift stay on ground (seconds)", PLUGIN_FCVAR, true, 0.0);
-	cvar_gift_chance = CreateConVar("l4d2_gifts_chance", "50",	"Chance (%) of infected drop gift.", PLUGIN_FCVAR, true, 1.0, true, 100.0);
-	cvar_gift_chance2 = CreateConVar("l4d2_gifts_chance2", "100",	"Chance (%) of tank and witch drop gift.", PLUGIN_FCVAR, true, 1.0, true, 100.0);
-	cvar_gift_probabilityE = CreateConVar("l4d2_gifts_probabilityE", "0", "Probability for gifts standard (animals and other objects) with respect to chance of infected drop gift.", PLUGIN_FCVAR, true, 1.0, true, 100.0);
-	cvar_gift_probabilityS = CreateConVar("l4d2_gifts_probabilityS", "100", "Probability for gift special with respect to chance of infected drop gift.", PLUGIN_FCVAR, true, 1.0, true, 100.0);
+	cvar_gift_chance = CreateConVar("l4d2_gifts_chance", "50",	"Chance (%) of infected drop special gift.", PLUGIN_FCVAR, true, 1.0, true, 100.0);
+	cvar_gift_chance2 = CreateConVar("l4d2_gifts_chance2", "100",	"Chance (%) of tank and witch drop second special gift.", PLUGIN_FCVAR, true, 1.0, true, 100.0);
 	cvar_gift_maxcollectMap = CreateConVar("l4d2_gifts_maxcollectMap", "0", "Maximum of gifts that all survivors can pick up per map [0 = Disabled]", PLUGIN_FCVAR, true, 0.0);
 	cvar_gift_maxcollectRound = CreateConVar("l4d2_gifts_maxcollectRound", "0", "Maximum of gifts that all survivors can pick up per round [0 = Disabled]", PLUGIN_FCVAR, true, 0.0);
 
@@ -319,8 +313,6 @@ public void OnPluginStart()
 	HookConVarChange(cvar_gift_life,	Cvar_Changed2);
 	HookConVarChange(cvar_gift_chance, Cvar_Changed3);
 	HookConVarChange(cvar_gift_chance2, Cvar_Changed4);
-	HookConVarChange(cvar_gift_probabilityE, Cvar_Changed6);
-	HookConVarChange(cvar_gift_probabilityS, Cvar_Changed6);
 	HookConVarChange(cvar_gift_maxcollectMap, Cvar_Changed7);
 	HookConVarChange(cvar_gift_maxcollectRound, Cvar_Changed7);
 	
@@ -464,8 +456,6 @@ void GetCvars()
 	iGiftLife = GetConVarInt(cvar_gift_life);
 	iGiftChance = GetConVarInt(cvar_gift_chance);
 	iGiftChance2 = GetConVarInt(cvar_gift_chance2);
-	iGiftEProbability = GetConVarInt(cvar_gift_probabilityE);
-	iGiftSProbability = GetConVarInt(cvar_gift_probabilityS);
 	iGiftMaxMap = GetConVarInt(cvar_gift_maxcollectMap);
 	iGiftMaxRound = GetConVarInt(cvar_gift_maxcollectRound);
 }
@@ -483,41 +473,24 @@ public Action Command_Gift(int client, int args)
 	
 	if(args < 1)
 	{
-		DropGift(client, "random");
+		DropGift(client, "special");
 	}
 	else
 	{
 		char arg1[10];
-		char arg2[40];
 		GetCmdArg(1, arg1, sizeof(arg1));
 		
-		if(StrEqual(arg1, "standard", false))
+		if(StrEqual(arg1, "special", false))
 		{
-			DropGift(client, arg1);
+			DropGift(client, "special");
 		}
-		else if(StrEqual(arg1, "special", false))
+		else if(StrEqual(arg1, "special2", false))
 		{
-			if(args < 2)
-			{
-				DropGift(client, arg1);
-			}
-			else
-			{
-				GetCmdArg(2, arg2, sizeof(arg2));
-				if(L4D2_IsValidWeaponName(arg2) || L4D2_IsValidMeleeWeaponName(arg2))
-				{
-					int gift = DropGift(client, arg1);
-					Format(g_sGifSWeapon[gift], sizeof(g_sGifSWeapon[]), "%s", arg2);
-				}
-				else
-				{
-					ReplyToCommand(client, "[SM] Invalid weapon_name");
-				}
-			}
+			DropGift(client, "special2");
 		}
 		else
 		{
-			ReplyToCommand(client, "[SM] Usage: sm_gift | sm_gift standard | sm_gift special [weapon_name]");
+			ReplyToCommand(client, "[SM] Usage: sm_gift <special or special2>");
 		}
 	}
 	return Plugin_Handled;
@@ -540,7 +513,6 @@ public Action Command_GiftCollected(int client, int args)
 	
 
 	Client_PrintToChat(client, false, "%s %t", TAG_GIFT, "Number of gifts collected");
-	Client_PrintToChat(client, false, "{B}Standard: %t", "In current map: %d | In current round: %d", CurrentGiftsForMap[client][TYPE_ESTANDAR], CurrentGiftsForRound[client][TYPE_ESTANDAR]);
 	Client_PrintToChat(client, false, "{B}Special: %t", "In current map: %d | In current round: %d", CurrentGiftsForMap[client][TYPE_SPECIAL], CurrentGiftsForRound[client][TYPE_SPECIAL]);
 	Client_PrintToChat(client, false, "{B}Total: %t", "In current map: %d | In current round: %d", CurrentGiftsTotalForMap[client], CurrentGiftsTotalForRound[client]);
 
@@ -717,12 +689,7 @@ public Action Event_PlayerUse(Event event, const char[] name, bool dontBroadcast
 		{
 			if(g_GifEntIndex[gift] == EntIndexToEntRef(gift))
 			{
-				if(StrEqual(g_sGifType[gift], "standard"))
-				{
-					//Points for Gifts Standard
-					NotifyGift(client, TYPE_ESTANDAR);
-				}
-				else if (StrEqual(g_sGifType[gift], "special"))
+				if (StrEqual(g_sGifType[gift], "special"))
 				{
 					//Points for Gifts Special
 					NotifyGift(client, TYPE_SPECIAL, gift);
@@ -774,12 +741,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					{
 						if(g_GifEntIndex[gift] == EntIndexToEntRef(gift))
 						{
-							if(StrEqual(g_sGifType[gift], "standard"))
-							{
-								//Points for Gifts Standard
-								NotifyGift(client, TYPE_ESTANDAR);
-							}
-							else if (StrEqual(g_sGifType[gift], "special"))
+							if (StrEqual(g_sGifType[gift], "special"))
 							{
 								//Points for Gifts Special
 								NotifyGift(client, TYPE_SPECIAL, gift);
@@ -804,13 +766,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 void NotifyGift(int client, int type, int gift = -1)
 {
-	if(type == TYPE_ESTANDAR)
-	{
-		Client_PrintToChatAll(false, "%s %t", TAG_GIFT, "Spawn Gift Standard Not Points", client);
-		
-		PlaySound(client,SND_REWARD2);
-	}
-	else if(type == TYPE_SPECIAL)
+	if(type == TYPE_SPECIAL)
 	{
 		if(gift == -1 || !IsValidEntity(gift))
 		{
@@ -874,44 +830,14 @@ int GetRandomIndexGift(const char[] sType)
 	return GiftsIndex[random];
 }
 
-int DropGift(int client, char[] type = "random")
-{
-	char randomTypeGift[10];
-
-	if(StrEqual(type, "random"))
-	{
-		int Sum = 0;
-		Sum += iGiftEProbability;
-		Sum += iGiftSProbability;
-		if (Sum > 0 && Sum <= 100)
-		{
-			float X = 100.0 / float(Sum);
-			float Y = GetRandomFloat(0.0, 100.0);
-			float A = 0.0;
-			float B = iGiftEProbability * X;
-			if (Y >= A && Y < A + B)
-			{
-				randomTypeGift = "standard";
-			}			
-			A = A + B;
-			B = iGiftSProbability * X;
-			if (Y >= A && Y < A + B)
-			{
-				randomTypeGift = "special";
-			}
-		}
-	}
-	else
-	{
-		Format(randomTypeGift, sizeof(randomTypeGift), "%s", type);
-	}
-	
+int DropGift(int client, char[] type = "special")
+{	
 	float gifPos[3];
 	GetEntPropVector(client, Prop_Send, "m_vecOrigin", gifPos);
 	gifPos[2] += 10.0;
 	
 	int gift = -1; //prop_physics_override
-	int random = GetRandomIndexGift(randomTypeGift);
+	int random = GetRandomIndexGift(type);
 	
 	if(StrEqual(g_sTypeModel[random], "physics"))
 	{
@@ -1019,12 +945,7 @@ public void OnTouch(int gift, int other)
 	!GetEntProp(other, Prop_Send, "m_isHangingFromLedge") &&
 	!GetEntProp(other, Prop_Send, "m_isIncapacitated"))
 	{
-		if(StrEqual(g_sGifType[gift], "standard"))
-		{
-			//Points for Gifts Standard
-			NotifyGift(other, TYPE_ESTANDAR);
-		}
-		else if (StrEqual(g_sGifType[gift], "special"))
+		if (StrEqual(g_sGifType[gift], "special"))
 		{
 			//Points for Gifts Special
 			NotifyGift(other, TYPE_SPECIAL, gift);
