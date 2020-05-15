@@ -109,6 +109,12 @@
 		"zho"			"禁止回靈魂復活!!"
 		"chi"			"禁止回灵魂复活!!"
 	}
+	"Not allowed to suicide in Gamemode"
+	{
+		"en"			"Not allowed to suicide during current mode"
+		"zho"			"目前模式禁止自殺!"
+		"chi"			"目前模式禁止自杀!"
+	}
 	"Not allowed to suicide"
 	{
 		"en"			"Not allowed to suicide when pinning survivor, you dumb fuck."
