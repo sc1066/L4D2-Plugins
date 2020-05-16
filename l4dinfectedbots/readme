@@ -61,25 +61,25 @@ These 6 values combined together must greater than or equal to
 -l4d_infectedbots_max_specials
 Note that this max limit does not count tank and witch in coop/survival, but it does count tank in versus
 
-2. adjust special limit if 5+ players
+2. adjust special limit if 5+ alive players
 For example.
 -l4d_infectedbots_max_specials "4"
 -l4d_infectedbots_add_specials "2"
 -l4d_infectedbots_add_specials_scale "3"
-This means that if server has 5+ survivors, each 3 players join, max specials limit plus 2
-So if there are 10 survivors, specials limit: 4+2+2 = 8
+This means that if server has 5+ alive survivors, each 3 players join, max specials limit plus 2
+So if there are 10 alive survivors, specials limit: 4+2+2 = 8
 
 if you don't want to adjust specials limit, set
 -l4d_infectedbots_add_specials "0" 
 
-3. adjust tank health if 5+ players
+3. adjust tank health if 5+ alive players
 For example
 -l4d_infectedbots_adjust_tankhealth_enable "1"
 -l4d_infectedbots_default_tankhealth "4000"
 -l4d_infectedbots_add_tankhealth "1200"
 -l4d_infectedbots_add_tankhealth_scale "3"
-This means that if server has 5+ survivors, each 3 players join, tank health increase 1200hp
-So if there are 10 survivors, tank health: 4000+1200+1200 = 6400hp
+This means that if server has 5+ alive survivors, each 3 players join, tank health increase 1200hp
+So if there are 10 alive survivors, tank health: 4000+1200+1200 = 6400hp
 
 To close this feature, do not want to overrides tank HP by this plugin, set
 -l4d_infectedbots_adjust_tankhealth_enable "0"
