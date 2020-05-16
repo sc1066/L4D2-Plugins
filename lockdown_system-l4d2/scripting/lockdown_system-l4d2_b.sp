@@ -310,7 +310,7 @@ public Action OnPlayerUsePre(Event event, const char[] name, bool dontBroadcast)
 
 				if(bTankDemolition && !bSpawnTank) 
 				{
-					ExecuteSpawn(user, "tank auto", 2);
+					ExecuteSpawn(user, "tank auto", 1);
 					bSpawnTank = true;
 				}
 				

@@ -74,7 +74,7 @@ void PluginDisable() {
 		if ( IsValidEdict(GetArrayCell(hTankPropsHit, i)) ) {
 			entity = i_Ent[GetArrayCell(hTankPropsHit, i)];
 			if(IsValidEntRef(entity))
-				RemoveEdict(entity);
+				AcceptEntityInput(entity, "Kill");
 		}
 	}
 	tankSpawned = false;
@@ -234,7 +234,7 @@ void UnhookTankProps() {
 		if ( IsValidEdict(GetArrayCell(hTankPropsHit, i)) ) {
 			entity = i_Ent[GetArrayCell(hTankPropsHit, i)];
 			if(IsValidEntRef(entity))
-			RemoveEdict(entity);
+				AcceptEntityInput(entity, "Kill");
 		}
 	}
 	ClearArray(hTankProps);

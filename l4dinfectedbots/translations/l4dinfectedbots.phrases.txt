@@ -30,7 +30,7 @@
 	{
 		"en"			"why so long?"
 		"zho"			"這麼長復活時間幹嗎?"
-		"chi"			"这么长复活时间干吗?"
+		"chi"			"设置这么长的复活时间干吗?"
 	}
 	"Bot Spawn Timer has been changed"
 	{
@@ -63,45 +63,45 @@
 	{
 		"en"			"why you need so many special infected?"
 		"zho"			"為捨要那麼多特感?"
-		"chi"			"为舍要那么多特感?"
+		"chi"			"为啥要那么多特感?"
 	}
 	"Special Infected Limit has been changed"
 	{
 		"#format"		"{1:d}"
 		"en"			"Special Infected Limit has been changed to {1}"
-		"chi"			"特感数量上限已经是 {1}"
-		"zho"			"特感數量上限已改成 {1}"
+		"chi"			"特感數量上限已改成 {1}"
+		"zho"			"特感数量上限已改成 {1}"
 	}
 	"Current status"
 	{
 		"#format"		"{1:d},{2:d},{3:d}"
-		"en"			"Numbers of Survivor: {1}, Infected Limit: {2}, Tank Health: {3}"
-		"zho"			"目前倖存者人數: {1}, 特感上限: {2}, Tank血量: {3}"
-		"chi"			"目前生还者人数: {1}, 特感上限: {2}, Tank血量: {3}"
+		"en"			"Numbers of Alive Survivor: {1}, Infected Limit: {2}, Tank Health: {3}"
+		"zho"			"目前倖存者存活人數: {1}, 特感上限: {2}, Tank血量: {3}"
+		"chi"			"目前生还者存活人数: {1}, 特感上限: {2}, Tank血量: {3}"
 	}
 	"sm_zs"
 	{
 		"en"			"Attention! You can type !zs to suicide if get stuck or too far from survivors."
 		"zho"			"注意!卡住、無法通過障礙物可於聊天視窗輸入!zs自殺."
-		"chi"			"注意!卡住、无法通过障碍物可于聊天视窗输入!zs自杀."
+		"chi"			"注意!卡住或者无法通过障碍物时可于聊天窗输入!zs自杀."
 	}
 	"Hud Disable"
 	{
 		"en"			"Infected HUD DISABLED - say !infhud to re-enable."
 		"zho"			"特感介面關閉 - 請輸入 !infhud 重新開啟"
-		"chi"			"特感介面关闭 - 请输入 !infhud 重新开启"
+		"chi"			"特感界面关闭 - 请输入 !infhud 重新开启"
 	}
 	"Hud Enable"
 	{
 		"en"			"Infected HUD ENABLED - say !infhud to disable."
 		"zho"			"特感介面開啟 - 請輸入 !infhud 關閉"
-		"chi"			"特感介面开启 - 请输入 !infhud 关闭"
+		"chi"			"特感界面开启 - 请输入 !infhud 关闭"
 	}
 	"Infected HUD is currently DISABLED"
 	{
 		"en"			"Infected HUD is currently DISABLED on this server for all players."
 		"zho"			"所有玩家特感介面暫時全部關閉"
-		"chi"			"所有玩家特感介面暂时全部关闭"
+		"chi"			"所有玩家特感界面暂时全部关闭"
 	}
 	"Not allowed to respawn"
 	{
@@ -109,15 +109,21 @@
 		"zho"			"禁止回靈魂復活!!"
 		"chi"			"禁止回灵魂复活!!"
 	}
-	"Not allowed to suicide in Gamemode"
+	"Not allowed to suicide during current mode"
 	{
 		"en"			"Not allowed to suicide during current mode"
 		"zho"			"目前模式禁止自殺!"
 		"chi"			"目前模式禁止自杀!"
 	}
+	"Not allowed to suicide so quickly"
+	{
+		"en"			"Not allowed to suicide so quickly after spawn, you dumb fuck!"
+		"zho"			"復活後短時間內禁止自殺!"
+		"chi"			"复活后短时间内禁止自杀!"
+	}
 	"Not allowed to suicide"
 	{
-		"en"			"Not allowed to suicide when pinning survivor, you dumb fuck."
+		"en"			"Not allowed to suicide when pinning survivor, you dumb fuck!"
 		"zho"			"禁止抓住人類期間自殺!"
 		"chi"			"禁止抓住人类期间自杀!"
 	}
@@ -125,18 +131,18 @@
 	{
 		"en"			"Type !ji to join infected team. (Adm only)"
 		"zho"			"聊天視窗輸入 !ji 加入感染者(只限管理員)"
-		"chi"			"聊天视窗输入 !ji 加入感染者(只限管理员)"
+		"chi"			"聊天窗输入 !ji 加入感染者(只限管理员)"
 	}
 	"Join infected team in coop/survival/realism"
 	{
 		"en"			"Type !ji to join infected team."
 		"zho"			"聊天視窗輸入 !ji 加入感染者"
-		"chi"			"聊天视窗输入 !ji 加入感染者"
+		"chi"			"聊天窗输入 !ji 加入感染者"
 	}
 	"Join survivor team"
 	{
 		"en"			"Type !js to join survivor team."
 		"zho"			"輸入 !js 加入倖存者!"
-		"chi"			"输入 !js 加入幸存者!"
+		"chi"			"输入 !js 加入生还者!"
 	}
 }
