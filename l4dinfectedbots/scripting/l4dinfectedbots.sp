@@ -20,7 +20,6 @@
 	   - Fixed "l4d_infectedbots_coordination" not working.
 	   - Improve new syntax code.
 	   - Add Translation.
-	   - Add #include <smlib>, remove <multicolors>
 
 * Version 2.2.3
 	   - Add Convar "l4d_infectedbots_adjust_tankhealth_enable"
@@ -472,7 +471,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <smlib>
+#include <multicolors>
 
 #pragma semicolon 1
 #pragma newdecls required //強制1.7以後的新語法
@@ -2064,7 +2063,7 @@ public Action Console_ZLimit(int client, int args)
 
 			SetConVarInt(FindConVar("l4d_infectedbots_max_specials"), newlimit);
 			i_OriginalMaxPlayerZombies = newlimit;
-			Client_PrintToChatAll(false, "[{G}TS{N}] {L}%N{N}: %t", client, "Special Infected Limit has been changed",newlimit);	
+			C_PrintToChatAll("[{olive}TS{default}] {lightgreen}%N{default}: %t", client, "Special Infected Limit has been changed",newlimit);	
 		}
 		else
 		{
@@ -2119,7 +2118,7 @@ public Action Console_Timer(int client, int args)
 				SetConVarInt(FindConVar("l4d_infectedbots_adjust_spawn_times"), 0);
 				SetConVarInt(FindConVar("l4d_infectedbots_spawn_time_max"), DD);
 				SetConVarInt(FindConVar("l4d_infectedbots_spawn_time_min"), DD);
-				Client_PrintToChatAll(false, "[{G}TS{N}] {L}%N{N}: %t",client,"Bot Spawn Timer has been changed",DD,DD);	
+				C_PrintToChatAll("[{olive}TS{default}] {lightgreen}%N{default}: %t",client,"Bot Spawn Timer has been changed",DD,DD);	
 			}
 			return Plugin_Handled;
 		}
@@ -2155,7 +2154,7 @@ public Action Console_Timer(int client, int args)
 				SetConVarInt(FindConVar("l4d_infectedbots_adjust_spawn_times"), 0);
 				SetConVarInt(FindConVar("l4d_infectedbots_spawn_time_max"), Max);
 				SetConVarInt(FindConVar("l4d_infectedbots_spawn_time_min"), Min);
-				Client_PrintToChatAll(false, "[{G}TS{N}] {L}%N{N}: %t",client,"Bot Spawn Timer has been changed",Min,Max);	
+				C_PrintToChatAll("[{olive}TS{green}] {lightgreen}%N{default}: %t",client,"Bot Spawn Timer has been changed",Min,Max);	
 			}
 			return Plugin_Handled;
 		}
@@ -2184,10 +2183,10 @@ public Action AnnounceJoinInfected(Handle timer, int client)
 		if ((h_JoinableTeamsAnnounce.BoolValue) && (h_JoinableTeams.BoolValue) && ((GameMode == 1) || (GameMode == 3)))
 		{
 			if(h_AdminJoinInfected.BoolValue)
-				Client_PrintToChat(client, false, "[{G}TS{N}] %T","Join infected team in coop/survival/realism(adm only)",client);
+				C_PrintToChat(client,"[{olive}TS{default}] %T","Join infected team in coop/survival/realism(adm only)",client);
 			else
-				Client_PrintToChat(client, false, "[{G}TS{N}] %T","Join infected team in coop/survival/realism",client);
-			Client_PrintToChat(client, false, "%T","Join survivor team",client);
+				C_PrintToChat(client,"[{olive}TS{default}] %T","Join infected team in coop/survival/realism",client);
+			C_PrintToChat(client,"%T","Join survivor team",client);
 		}
 	}
 }
@@ -2791,7 +2790,7 @@ public Action ColdDown_Timer(Handle timer)
 		MaxPlayerZombies = h_MaxPlayerZombies.IntValue;
 		SetConVarInt(FindConVar("z_max_player_zombies"), MaxPlayerZombies);
 		iPlayersInSurvivorTeam = iSurplayers;
-		Client_PrintToChatAll(false, "[{G}TS{N}] %t","Current status",iSurplayers,MaxPlayerZombies,cvarZombieHP[6].IntValue);
+		C_PrintToChatAll("[{olive}TS{default}] %t","Current status",iSurplayers,MaxPlayerZombies,cvarZombieHP[6].IntValue);
 	}
 }
 
@@ -4442,7 +4441,7 @@ public Action TimerAnnounce2(Handle timer, int client)
 	{
 		if (GetClientTeam(client) == TEAM_INFECTED && IsPlayerAlive(client))
 		{
-			Client_PrintToChat(client, false, "[{G}TS{N}] %T","sm_zs",client);
+			C_PrintToChat(client, "[{olive}TS{default}] %T","sm_zs",client);
 		}
 	}
 }
