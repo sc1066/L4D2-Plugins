@@ -69,6 +69,9 @@ For example.
 This means that if server has 5+ survivors, each 3 players join, max specials limit plus 2
 So if there are 10 survivors, specials limit: 4+2+2 = 8
 
+if you don't want to adjust specials limit, set
+-l4d_infectedbots_add_specials "0" 
+
 3. adjust tank health if 5+ players
 For example
 -l4d_infectedbots_adjust_tankhealth_enable "1"
@@ -118,6 +121,13 @@ Must be careful to adjust, these convars will also affect common zombie spawn ra
 
 Make infected player spawn near very close by survivors for better gaming experience
 -l4d_infectedbots_spawn_range_min "0" 
+
+8. Spawn Infected together
+bots will only spawn when all other bot spawn timers are at zero, and them spawn together
+-l4d_infectedbots_coordination "1" 
+
+Plugin will disable spawning infected bot when a tank which has already seen the survivors is on the field.
+-l4d_infectedbots_spawns_disabled_tank "1" 
 
 -Command-
 !ji - JoinInfected
