@@ -15,4 +15,4 @@ see l4d2_votes4.jpg
 
 -Command-
 "sm_votes". "Open Vote Menu 打開投票菜單"
-"sm_restartmap", "Restart current level"
+(Adm only)"sm_restartmap", "Restart current level"
