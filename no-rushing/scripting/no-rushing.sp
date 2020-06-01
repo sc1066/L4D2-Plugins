@@ -239,6 +239,9 @@ public Action:Timer_DistanceCheck(Handle:timer)
 				{
 					g_TeamDistance = CalculateTeamDistance(i);
 					g_PlayerDistance = (L4D2Direct_GetFlowDistance(i) / g_MapFlowDistance);
+					
+					if(g_PlayerDistance < 0 || g_PlayerDistance > 1) continue;
+
 					if (DistanceWarning[i] && g_TeamDistance + g_WarningDistance < g_PlayerDistance)
 					{
 						if (g_WarningCounter[i] + 1 < i_InfractionLimit)
@@ -296,6 +299,8 @@ public Action:Timer_IsEnsnared(Handle:timer, any:client)
 		new Float:g_PlayerDistance = (L4D2Direct_GetFlowDistance(client) / g_MapFlowDistance);
 		new Float:g_TeamDistance = CalculateTeamDistance(client);
 		
+		if(g_PlayerDistance < 0 || g_PlayerDistance > 1) return Plugin_Continue;
+
 		if (g_TeamDistance + g_NoticeDistance < g_PlayerDistance)
 		{
 			if (g_OldDistance[client] == 0.0)
@@ -330,7 +335,8 @@ stock bool:IsClientLaggingBehind(client)
 {
 	new Float:g_TeamDistance = CalculateTeamDistance(client);
 	new Float:g_PlayerDistance = (L4D2Direct_GetFlowDistance(client) / g_MapFlowDistance);
-	
+
+	if(g_PlayerDistance < 0 || g_PlayerDistance > 1) return false;
 	if (g_IgnoreDistance == 0.0 || g_PlayerDistance + g_IgnoreDistance >= g_TeamDistance || Ensnared[client] || IsIncapacitated(client))
 	{
 		return false;
@@ -374,7 +380,7 @@ stock TeleportLaggingPlayer(client)
 		{
 			g_PlayerDistance = (L4D2Direct_GetFlowDistance(i) / g_MapFlowDistance);
 			
-			if (g_PlayerDistance > g_TargetDistance)
+			if (g_PlayerDistance > 0 && g_PlayerDistance < 1 && g_PlayerDistance > g_TargetDistance)
 			{
 				g_TargetDistance = g_PlayerDistance;
 				target = i;
@@ -415,8 +421,12 @@ stock Float:CalculateTeamDistance(client)
 		{
 			if (i_IgnoreIncapacitated && !IsIncapacitated(i) || !i_IgnoreIncapacitated)
 			{
-				g_TeamDistance += (L4D2Direct_GetFlowDistance(i) / g_MapFlowDistance);
-				counter++;
+				new Float:fPlayerflow = L4D2Direct_GetFlowDistance(i) / g_MapFlowDistance;
+				if(fPlayerflow > 0 && fPlayerflow < 1)//in case player out of map
+				{
+					g_TeamDistance += fPlayerflow;
+					counter++;
+				}
 			}
 		}
 	}
