@@ -1,6 +1,6 @@
 /********************************************************************************************
 * Plugin	: L4D/L4D2 InfectedBots (Versus Coop/Coop Versus)
-* Version	: 2.2.6
+* Version	: 2.2.7
 * Game		: Left 4 Dead 1 & 2
 * Author	: djromero (SkyDavid, David) and MI 5 and Harry Potter
 * Testers	: Myself, MI 5
@@ -9,6 +9,9 @@
 * Purpose	: This plugin spawns infected bots in L4D1, and gives greater control of the infected bots in L4D1/L4D2.
 * 
 * WARNING	: Please use sourcemod's latest 1.8 branch snapshot.
+* Version 2.2.7
+	   - fixed respawn timer when playing infected in coop/realism/survival mode.
+
 * Version 2.2.6
 	   - adjust special limit and tank health depends on 4+ ALIVE survivor players"
 	   - port l4d1
@@ -478,7 +481,7 @@
 
 #pragma semicolon 1
 #pragma newdecls required //強制1.7以後的新語法
-#define PLUGIN_VERSION "2.2.6"
+#define PLUGIN_VERSION "2.2.7"
 
 #define DEBUGSERVER 0
 #define DEBUGCLIENTS 0
@@ -1711,6 +1714,8 @@ public void OnMapStart()
 
 	if( g_bValidMap )
 		PrecacheModel(MODEL_LIGHT, true);
+
+	CreateTimer(5.0, HUDReset);
 }
 
 public void OnMapEnd()
@@ -2605,7 +2610,7 @@ public Action evtPlayerDeath(Event event, const char[] name, bool dontBroadcast)
 				
 			if(!IsFakeClient(client)) 
 			{
-				SpawnTime = h_InfectedSpawnTimeMin.IntValue/2 - TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue + (HumansOnInfected() - 1) * 3;
+				SpawnTime = h_InfectedSpawnTimeMin.IntValue - TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue + (HumansOnInfected() - 1) * 3;
 				if(SpawnTime <= 10)
 					SpawnTime = 10;
 			}
@@ -2630,7 +2635,7 @@ public Action evtPlayerDeath(Event event, const char[] name, bool dontBroadcast)
 		int SpawnTime = GetURandomIntRange(h_InfectedSpawnTimeMin.IntValue, h_InfectedSpawnTimeMax.IntValue);
 		if(!IsFakeClient(client)) 
 		{
-			SpawnTime = h_InfectedSpawnTimeMin.IntValue/2 - TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue + (HumansOnInfected() - 1) * 3;
+			SpawnTime = h_InfectedSpawnTimeMin.IntValue - TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue + (HumansOnInfected() - 1) * 3;
 			if(SpawnTime <= 8)
 				SpawnTime = 8;
 		}
@@ -2675,11 +2680,10 @@ public Action Spawn_InfectedBot_Director(Handle timer, int BotNeeded)
 					resetGhost[i] = true;
 					SetGhostStatus(i, false);
 				}
-				
 				else if (!PlayerIsAlive(i) && respawnDelay[i] > 0 && GameMode != 2)
 				{
-					//resetLife[i] = true;
-					//SetLifeState(i, false);
+					resetLife[i] = true;
+					SetLifeState(i, false);
 					#if DEBUGSERVER
 					LogMessage("Detected a dead player with a respawn timer, setting restrictions to prevent player from taking a bot");
 					#endif
@@ -3882,7 +3886,7 @@ public Action Spawn_InfectedBot(Handle timer)
 	// Before spawning the bot, we determine if an real infected player is dead, since the int infected bot will be controlled by this player
 	bool resetGhost[MAXPLAYERS+1];
 	bool resetLife[MAXPLAYERS+1];
-	
+	bool binfectedfreeplayer = false;
 	for (int i=1;i<=MaxClients;i++)
 	{
 		if (IsClientInGame(i) && !IsFakeClient(i)) // player is connected and is not fake and it's in game ...
@@ -3906,8 +3910,8 @@ public Action Spawn_InfectedBot(Handle timer)
 				}
 				else if (!PlayerIsAlive(i) && respawnDelay[i] > 0)
 				{
-					//resetLife[i] = true;
-					//SetLifeState(i, false);
+					resetLife[i] = true;
+					SetLifeState(i, false);
 					#if DEBUGSERVER
 					LogMessage("Found a dead player, spawn time has not reached zero, delaying player to Spawn an infected bot");
 					#endif
@@ -3916,6 +3920,7 @@ public Action Spawn_InfectedBot(Handle timer)
 				{
 					AlreadyGhosted[i] = false;
 					SetLifeState(i, true);
+					binfectedfreeplayer = true;
 				}
 				
 			}
@@ -3940,7 +3945,7 @@ public Action Spawn_InfectedBot(Handle timer)
 		temp = true;
 	}
 	
-	if (L4D2Version && GameMode != 2)
+	if (GameMode != 2 && !binfectedfreeplayer)
 	{
 		int bot = CreateFakeClient("Infected Bot");
 		if (bot != 0)
@@ -4530,6 +4535,7 @@ public Action monitorRespawn(Handle timer)
 	{
 		if (respawnDelay[i] > 0)
 		{
+			//PrintToChatAll("respawnDelay[i]--");
 			respawnDelay[i]--;
 			foundActiveRTmr = true;
 		}
@@ -5053,9 +5059,11 @@ public Action evtInfectedWaitSpawn(Event event, const char[] name, bool dontBroa
 		else if (GameMode != 2 && !IsFakeClient(client))
 		{	
 			//timetowait = GetSpawnTime[client];
-			timetowait = h_InfectedSpawnTimeMin.IntValue/2 - TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue + (HumansOnInfected() - 1) * 3;
+			timetowait = h_InfectedSpawnTimeMin.IntValue - TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue + (HumansOnInfected() - 1) * 3;
 			if(timetowait <= 8)
 				timetowait = 8;
+
+			//PrintToChatAll("evtInfectedWaitSpawn: %N - %d秒",client,timetowait);
 		}
 		else
 		{	
@@ -5068,6 +5076,7 @@ public Action evtInfectedWaitSpawn(Event event, const char[] name, bool dontBroa
 			// Note: If we have to start a int timer then there will be a 1 second delay before it starts, so 
 			// subtract 1 from the pending spawn time
 			respawnDelay[client] = (timetowait-1);
+			//PrintToChatAll("Start respawnTimer");
 			respawnTimer = CreateTimer(1.0, monitorRespawn, _, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 		}
 		// Send mod details/commands to the client, unless they have seen the announce already.
