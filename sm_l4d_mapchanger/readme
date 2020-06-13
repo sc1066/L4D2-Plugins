@@ -10,5 +10,4 @@ Force change to next mission when current mission end.
 "sm_l4d_fmc_crec", "3", "Quantity of events RoundEnd before force of changelevel in versus: 4 for l4d <> 1.0.1.2"
 "sm_l4d_fmc_chdelayvs", "1.0", "Delay before versus mission change (float in sec)."
 "sm_l4d_fmc_chdelaycoop", "6.0", "Delay before coop mission change (float in sec)."
-"sm_l4d_fmc_announce", "1", "Enables next mission to advertise to players."
 	
