@@ -62,7 +62,7 @@
 	}
 	"c13m4_cutthroatcreek"
 	{
-		"next mission map" "c1m1_hote"
+		"next mission map" "c1m1_hotel"
 		"next mission name" "Dead Center (4 Maps)"
 	}
 }
