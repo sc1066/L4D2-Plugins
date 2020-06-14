@@ -1,6 +1,6 @@
 # L4D2-Plugins by Harry Potter
 L4D2 Competitive enhancement, bug/glitch fixes, general purpose and freaky-fun plugins.
->All plugins in here only apply to L4D2 (last edited:2020/6/13)
+>All plugins in here only apply to L4D2 (last edited:2020/6/14)
 # Require
 * Clean Servers:
   * [Sourcemod 1.8](https://www.sourcemod.net/downloads.php?branch=1.8-dev) (or newer), [Metamod](https://www.metamodsource.net/downloads.php?branch=stable)
@@ -24,7 +24,6 @@ L4D2 Competitive enhancement, bug/glitch fixes, general purpose and freaky-fun p
 * <b>l4d2_change_m1</b>: If all Survivors die, change level to the current map m1 (coop only)
 * <b>no-rushing</b>: Prevents Rushers From Rushing Then Teleports Them Back To Their Teammates.
 * <b>l4d2_spectating_cheat</b>: A spectator who watching the survivor at first person view can now see the infected model glows though the wall
-* <b>antisaferoomdoorclose</b>: saferoom door anti close in l4d2
 * <b>lfd_both_fixUpgradePack</b>: Fixes upgrade packs pickup bug when using survivor model change
 * <b>lockdown_system-l4d2_b</b>: Locks Saferoom Door Until Someone Opens It.
 # Scripting Compiler
