@@ -1323,9 +1323,11 @@ bool:BusyPlayersOnInfected()
 				return false;
 			if(!IsPlayerAlive(i))
 				return false;
+
+			return true;
 		}
 	}
-	return true;
+	return false;
 }
 
 bool:IsPlayerGhost (client)
