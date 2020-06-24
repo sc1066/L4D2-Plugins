@@ -47,7 +47,7 @@ public void OnPluginStart()
 	
 	CreateConVar("lockdown_system-l4d2_version", PLUGIN_VERSION, "Lockdown System Version", FCVAR_SPONLY|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	lsAnnounce = CreateConVar("lockdown_system-l4d2_announce", "1", "Enable/Disable Announcements", FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	lsAntiFarmDuration = CreateConVar("lockdown_system-l4d2_anti-farm_duration", "300", "Duration Of Anti-Farm", FCVAR_SPONLY|FCVAR_NOTIFY);
+	lsAntiFarmDuration = CreateConVar("lockdown_system-l4d2_anti-farm_duration", "200", "Duration Of Anti-Farm", FCVAR_SPONLY|FCVAR_NOTIFY);
 	lsDuration = CreateConVar("lockdown_system-l4d2_duration", "150", "Duration Of Lockdown", FCVAR_SPONLY|FCVAR_NOTIFY);
 	lsMobs = CreateConVar("lockdown_system-l4d2_mobs", "10", "Number Of Mobs To Spawn", FCVAR_SPONLY|FCVAR_NOTIFY, true, 1.0, true, 10.0);
 	lsTankDemolition = CreateConVar("lockdown_system-l4d2_tank_demolition", "1", "Enable/Disable Tank Demolition, server will spawn tank before door open and after door open", FCVAR_SPONLY|FCVAR_NOTIFY, true, 0.0, true, 1.0);

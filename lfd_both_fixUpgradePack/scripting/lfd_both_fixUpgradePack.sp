@@ -33,7 +33,7 @@ public void OnPluginStart() {
 	HookEvent("round_start", EventRoundStart);
 
 	cvarDeniedSound = CreateConVar("upgrade_denied_sound", "1", "Play sound when ammo already used", FCVAR_NONE);
-	cvarBlockGlauncher = CreateConVar("upgrade_block_glauncher", "1", "Block use of special ammo with grenade launcher (0 - Allow | 1 - Block any | 2 - Block incendiary | 3 - Block explosive)", FCVAR_NONE);
+	cvarBlockGlauncher = CreateConVar("upgrade_block_glauncher", "0", "Block use of special ammo with grenade launcher (0 - Allow | 1 - Block any | 2 - Block incendiary | 3 - Block explosive)", FCVAR_NONE);
 	cvarIncendiaryMulti = CreateConVar("upgrade_incendiary_multi", "1.0", "Incendiary ammo multiplier on pickup", FCVAR_NONE);
 	cvarExplosiveMulti = CreateConVar("upgrade_explosive_multi", "1.0", "Explosive ammo multiplier on pickup", FCVAR_NONE);
 
@@ -46,6 +46,8 @@ public void OnPluginStart() {
 	Handle hGameData = LoadGameConfigFile("upgradepackfix");
 	g_UpgradePackCanUseCount = GameConfGetOffset(hGameData, "m_iUpgradePackCanUseCount");
 	delete hGameData;
+
+	AutoExecConfig(true, "lfd_both_fixUpgradePack");
 }
 
 public void OnAllPluginsLoaded() {

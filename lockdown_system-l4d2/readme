@@ -4,7 +4,7 @@ Original Post: https://forums.alliedmods.net/showthread.php?t=281305
 
 -Convars-
 "lockdown_system-l4d2_announce", "1", "Enable/Disable Announcements"
-"lockdown_system-l4d2_anti-farm_duration", "300", "Duration Of Anti-Farm"
+"lockdown_system-l4d2_anti-farm_duration", "200", "Duration Of Anti-Farm"
 "lockdown_system-l4d2_duration", "150", "Duration Of Lockdown"
 "lockdown_system-l4d2_mobs", "5", "Number Of Mobs To Spawn"
 "lockdown_system-l4d2_menu", "0", "Enable/Disable Menu"

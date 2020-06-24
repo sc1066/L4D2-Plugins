@@ -4,6 +4,6 @@ Original Post: https://forums.alliedmods.net/showthread.php?t=322824
 
 -Convars-
 upgrade_denied_sound  "1", "Play sound when ammo already used"
-upgrade_block_glauncher "1", "Block use of special ammo with grenade launcher (0 - Allow | 1 - Block any | 2 - Block incendiary | 3 - Block explosive)"
+upgrade_block_glauncher "0", "Block use of special ammo with grenade launcher (0 - Allow | 1 - Block any | 2 - Block incendiary | 3 - Block explosive)"
 upgrade_incendiary_multi "1.0", "Incendiary ammo multiplier on pickup"
 upgrade_explosive_multi "1.0", "Explosive ammo multiplier on pickup"

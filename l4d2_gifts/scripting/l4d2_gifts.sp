@@ -142,7 +142,7 @@
 #define TYPE_SPECIAL		2
 #define TYPE_SPECIAL2		1
 #define MAX_SPECIALITEMS	46
-#define MAX_SPECIALITEMS2	6
+#define MAX_SPECIALITEMS2	7
 
 #define TEAM_SURVIVOR		2
 #define TEAM_INFECTED		3
@@ -181,6 +181,7 @@ char weapons_name2[MAX_SPECIALITEMS2][2][50] =
 	{"adrenaline", "腎上腺素"},
 	{"health", "滿血生命值"},
 	{"vomitjar", "膽汁"},
+	{"grenade_launcher","榴彈發射器"}
 };
 
 char weapons_name[MAX_SPECIALITEMS][2][50] = 
