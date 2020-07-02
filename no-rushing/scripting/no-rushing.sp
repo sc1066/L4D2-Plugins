@@ -4,7 +4,7 @@
 
 #define MAX_ENTITIES 2048
 
-#define PLUGIN_VERSION "1.2"
+#define PLUGIN_VERSION "1.3"
 
 #define PLUGIN_NAME "Ready Up Module: No Rushing"
 #define PLUGIN_DESCRIPTION "Prevents Rushers From Rushing Then Teleports Them Back To Their Teammates."
@@ -12,13 +12,14 @@
 #define CVAR_SHOW FCVAR_NOTIFY
 
 #pragma semicolon 1
+#pragma newdecls required
 #include <sourcemod>
 #include <sdktools>
-#include <colors>
+#include <multicolors>
 #include <l4d2_direct>
-#include "l4d_stocks.inc"
+#include <l4d_stocks>
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = PLUGIN_NAME,
 	author = "cravenge & Harry",
@@ -27,38 +28,40 @@ public Plugin:myinfo =
 	url = "https://steamcommunity.com/id/fbef0102/"
 };
 
-new GameMode; //1:coop/realism, 2:versus, 3:survival
+int GameMode; //1:coop/realism, 2:versus, 3:survival
 
-//new bool:IsPluginLoaded;
-new bool:b_LeftSaveRoom = false;
-new bool:Ensnared[MAXPLAYERS+1];
-new bool:DistanceWarning[MAXPLAYERS+1];
-new bool:IsLagging[MAXPLAYERS+1];
-new g_WarningCounter[MAXPLAYERS+1];
-//new configLoadCount;
-new Float:g_NoticeDistance;
-new Float:g_WarningDistance;
-new Float:g_IgnoreDistance;
-new Float:g_OldDistance[MAXPLAYERS+1];
-new Float:g_MapFlowDistance;
-new String:white[10];
-new String:blue[10];
-new String:orange[10];
-new String:green[10];
-new String:s_rup[32];
+bool b_LeftSaveRoom = false;
+bool Ensnared[MAXPLAYERS+1];
+bool DistanceWarning[MAXPLAYERS+1];
+bool IsLagging[MAXPLAYERS+1];
+int g_WarningCounter[MAXPLAYERS+1];
 
-new Handle:h_InfractionLimit;
-new Handle:h_SurvivorsRequired;
-new Handle:h_IgnoreIncapacitated;
-new Handle:h_IgnoreStraggler;
-new Handle:h_InfractionResult;
-new i_InfractionLimit;
-new i_SurvivorsRequired;
-new i_IgnoreIncapacitated;
-new i_IgnoreStraggler;
-new i_InfractionResult;
+float g_NoticeDistance;
+float g_WarningDistance;
+float g_IgnoreDistance;
+float g_OldDistance[MAXPLAYERS+1];
+float g_MapFlowDistance;
+char white[10];
+char blue[10];
+char orange[10];
+char green[10];
+char s_rup[32];
 
-public OnPluginStart()
+ConVar h_InfractionLimit;
+ConVar h_SurvivorsRequired;
+ConVar h_IgnoreIncapacitated;
+ConVar h_IgnoreStraggler;
+ConVar h_InfractionResult;
+int i_InfractionLimit;
+int i_SurvivorsRequired;
+int i_IgnoreIncapacitated;
+int i_IgnoreStraggler;
+int i_InfractionResult;
+int g_iPlayerSpawn, g_iRoundStart;
+Handle PlayerLeftStartTimer = null;
+Handle DistanceCheckTimer = null;
+
+public void OnPluginStart()
 {
 	GameCheck();
 	
@@ -68,16 +71,16 @@ public OnPluginStart()
 	h_IgnoreIncapacitated = CreateConVar("l4d_rushing_ignore_incapacitated", "0", "Ignore Incapacitated Survivors?", FCVAR_SPONLY,true, 0.0, true, 1.0);
 	h_IgnoreStraggler = CreateConVar("l4d_rushing_ignore_lagging", "0", "Ignore lagging or lost players?", FCVAR_SPONLY,true, 0.0, true, 1.0);
 	h_InfractionResult = CreateConVar("l4d_rushing_action_rushers", "1", "Modes: 0=Teleport only, 1=Teleport and kill after reaching limits, 2=Teleport and kick after reaching limits.", FCVAR_SPONLY,true, 0.0, true, 2.0);
-	i_InfractionLimit = GetConVarInt(h_InfractionLimit);
-	i_SurvivorsRequired = GetConVarInt(h_SurvivorsRequired);
-	i_IgnoreIncapacitated = GetConVarInt(h_IgnoreIncapacitated);
-	i_IgnoreStraggler = GetConVarInt(h_IgnoreStraggler);
-	i_InfractionResult = GetConVarInt(h_InfractionResult);
-	HookConVarChange(h_InfractionLimit, ConVarInfractionLimit);
-	HookConVarChange(h_SurvivorsRequired, ConVarSurvivorsRequired);
-	HookConVarChange(h_IgnoreIncapacitated, ConVarIgnoreIncapacitated);
-	HookConVarChange(h_IgnoreStraggler, ConVarIgnoreStraggler);
-	HookConVarChange(h_InfractionResult, ConVarInfractionResult);
+	i_InfractionLimit = h_InfractionLimit.IntValue;
+	i_SurvivorsRequired = h_SurvivorsRequired.IntValue;
+	i_IgnoreIncapacitated = h_IgnoreIncapacitated.IntValue;
+	i_IgnoreStraggler = h_IgnoreStraggler.IntValue;
+	i_InfractionResult = h_InfractionResult.IntValue;
+	h_InfractionLimit.AddChangeHook(ConVarInfractionLimit);
+	h_SurvivorsRequired.AddChangeHook(ConVarSurvivorsRequired);
+	h_IgnoreIncapacitated.AddChangeHook(ConVarIgnoreIncapacitated);
+	h_IgnoreStraggler.AddChangeHook(ConVarIgnoreStraggler);
+	h_InfractionResult.AddChangeHook(ConVarInfractionResult);
 	
 	Format(white, sizeof(white), "{default}");
 	Format(blue, sizeof(blue), "{blue}");
@@ -90,16 +93,25 @@ public OnPluginStart()
 	HookEvent("mission_lost", OnFunctionEnd);
 	HookEvent("finale_win", OnFunctionEnd);
 	HookEvent("scavenge_round_finished", OnFunctionEnd);
+	HookEvent("player_spawn",		Event_PlayerSpawn,	EventHookMode_PostNoCopy);
 	
 	LoadTranslations("common.phrases");
 	LoadTranslations("norushing.phrases");
 	
+	CreateTimer(0.5, tmrStart, _, TIMER_FLAG_NO_MAPCHANGE);
+	
 	AutoExecConfig(true, "no-rushing");
 }
 
-GameCheck()
+public void OnPluginEnd()
 {
-	decl String:gameMode[16];
+	ResetPlugin();
+	ResetTimer();
+}
+
+void GameCheck()
+{
+	char gameMode[16];
 	GetConVarString(FindConVar("mp_gamemode"), gameMode, sizeof(gameMode));
 	if (StrEqual(gameMode, "survival", false))
 	{
@@ -119,37 +131,26 @@ GameCheck()
  	}
 }
 
-public OnConfigsExecuted()
+public void OnConfigsExecuted()
 {
 	if (GameMode != 3)
 	{
-		//IsPluginLoaded = true;
 		g_NoticeDistance = 0.0;
 		g_WarningDistance = 0.0;
 		g_IgnoreDistance = 0.0;
 		
-		decl String:s_Path[PLATFORM_MAX_PATH];
+		char s_Path[PLATFORM_MAX_PATH];
 		BuildPath(Path_SM, s_Path, sizeof(s_Path), "%s", CONFIG_MAPS);
 		if (!DirExists(s_Path))
 		{
 			CreateDirectory(s_Path, 511);
 		}
 		
-		//configLoadCount = 0;
 		ParseMapConfigs();
 	}
-	else
-	{
-		//IsPluginLoaded = false;
-	}
 }
 
-public OnClientPutInServer()
-{
-	g_MapFlowDistance = L4D2Direct_GetMapMaxFlowDistance();
-}
-
-public OnClientDisconnect(client)
+public void OnClientPutInServer(int client)
 {
 	if (IsClientInGame(client))
 	{
@@ -161,25 +162,60 @@ public OnClientDisconnect(client)
 	}
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	b_LeftSaveRoom	= false;
 }
 
-public Action:OnFunctionStart(Handle:event, const String:name[], bool:dontBroadcast)
+public void OnMapEnd()
 {
-	if (GameMode != 3 /*&& IsPluginLoaded*/)
+	ResetPlugin();
+	ResetTimer();
+}
+
+public void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
+{
+	if( g_iPlayerSpawn == 0 && g_iRoundStart == 1 )
+		CreateTimer(0.5, tmrStart, _, TIMER_FLAG_NO_MAPCHANGE);
+	g_iPlayerSpawn = 1;
+}
+
+public Action OnFunctionStart(Event event, const char[] name, bool dontBroadcast)
+{
+	b_LeftSaveRoom = false;
+	for (int i = 1; i <= MaxClients; i++)
 	{
-		CreateTimer(1.0, PlayerLeftStart, _, TIMER_FLAG_NO_MAPCHANGE);
+		if (IsClientConnected(i) && IsClientInGame(i))
+		{
+			DistanceWarning[i] = false;
+			g_WarningCounter[i] = 0;
+			Ensnared[i] = false;
+			g_OldDistance[i] = 0.0;
+			IsLagging[i] = false;
+		}
+	}
+	if( g_iPlayerSpawn == 1 && g_iRoundStart == 0 )
+		CreateTimer(0.5, tmrStart, _, TIMER_FLAG_NO_MAPCHANGE);
+	g_iRoundStart = 1;
+}
+
+public Action tmrStart(Handle timer)
+{
+	g_MapFlowDistance = L4D2Direct_GetMapMaxFlowDistance();
+	ResetPlugin();
+	if (GameMode != 3)
+	{
+		if(PlayerLeftStartTimer == null) CreateTimer(1.0, PlayerLeftStart, _, TIMER_REPEAT);
 	}
 }
 
-public Action:OnFunctionEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public Action OnFunctionEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	if (GameMode != 3 /*&& IsPluginLoaded*/)
+	ResetPlugin();
+	if (GameMode != 3)
 	{
 		b_LeftSaveRoom = false;
-		for (new i = 1; i <= MaxClients; i++)
+		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsClientConnected(i) && IsClientInGame(i))
 			{
@@ -193,11 +229,12 @@ public Action:OnFunctionEnd(Handle:event, const String:name[], bool:dontBroadcas
 	}
 }
 
-public Action:Timer_DistanceCheck(Handle:timer)
+public Action Timer_DistanceCheck(Handle timer)
 {
 	
 	if (!b_LeftSaveRoom)
 	{
+		DistanceCheckTimer = null;
 		return Plugin_Stop;
 	}
 
@@ -206,10 +243,10 @@ public Action:Timer_DistanceCheck(Handle:timer)
 		return Plugin_Continue;
 	}
 	
-	new Float:g_TeamDistance = 0.0;
-	new Float:g_PlayerDistance = 0.0;
+	float g_TeamDistance = 0.0;
+	float g_PlayerDistance = 0.0;
 	
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == TEAM_SURVIVOR && IsPlayerAlive(i))
 		{
@@ -223,7 +260,7 @@ public Action:Timer_DistanceCheck(Handle:timer)
 			{
 				if (!i_IgnoreStraggler)
 				{
-					CPrintToChat(i, "%T", "Lagging Behind", i, white, green, white);
+					C_PrintToChat(i, "%T", "Lagging Behind", i, white, green, white);
 					TeleportLaggingPlayer(i);
 					IsLagging[i] = false;
 				}
@@ -247,18 +284,18 @@ public Action:Timer_DistanceCheck(Handle:timer)
 						if (g_WarningCounter[i] + 1 < i_InfractionLimit)
 						{
 							g_WarningCounter[i]++;
-							CPrintToChat(i, "%s %T", s_rup, "Rushing Notice", i, white, orange, green, white, green, g_WarningCounter[i], i_InfractionLimit);
+							C_PrintToChat(i, "%s %T", s_rup, "Rushing Notice", i, white, orange, green, white, green, g_WarningCounter[i], i_InfractionLimit);
 							TeleportRushingPlayer(i);
 						}
 						else
 						{
-							decl String:nClient[MAX_NAME_LENGTH];
-							decl String:AuthId[MAX_NAME_LENGTH];
+							char nClient[MAX_NAME_LENGTH];
+							char AuthId[MAX_NAME_LENGTH];
 							GetClientName(i, nClient, sizeof(nClient));
 							GetClientAuthId(i, AuthId_Steam2, AuthId, sizeof(AuthId));
 							if (i_InfractionResult > 0)
 							{
-								CPrintToChatAll("%s %t", s_rup, "Rushing Violation", blue, white, orange, nClient);
+								C_PrintToChatAll("%s %t", s_rup, "Rushing Violation", blue, white, orange, nClient);
 								if (i_InfractionResult == 1)
 								{
 									ForcePlayerSuicide(i);
@@ -274,7 +311,7 @@ public Action:Timer_DistanceCheck(Handle:timer)
 					else if (!DistanceWarning[i] && g_TeamDistance + g_NoticeDistance < g_PlayerDistance)
 					{
 						DistanceWarning[i] = true;
-						CPrintToChat(i, "%s %T", s_rup, "Rushing Warning", i, white, orange);
+						C_PrintToChat(i, "%s %T", s_rup, "Rushing Warning", i, white, orange);
 					}
 					else if (DistanceWarning[i] && g_TeamDistance + g_NoticeDistance >= g_PlayerDistance)
 					{
@@ -287,7 +324,7 @@ public Action:Timer_DistanceCheck(Handle:timer)
 	return Plugin_Continue;
 }
 
-public Action:Timer_IsEnsnared(Handle:timer, any:client)
+public Action Timer_IsEnsnared(Handle timer, int client)
 {
 	if (b_LeftSaveRoom && !IsSurvival() && IsClientConnected(client) && IsClientInGame(client) && GetClientTeam(client) == TEAM_SURVIVOR && IsPlayerAlive(client))
 	{
@@ -296,8 +333,8 @@ public Action:Timer_IsEnsnared(Handle:timer, any:client)
 			return Plugin_Continue;
 		}
 		
-		new Float:g_PlayerDistance = (L4D2Direct_GetFlowDistance(client) / g_MapFlowDistance);
-		new Float:g_TeamDistance = CalculateTeamDistance(client);
+		float g_PlayerDistance = (L4D2Direct_GetFlowDistance(client) / g_MapFlowDistance);
+		float g_TeamDistance = CalculateTeamDistance(client);
 		
 		if(g_PlayerDistance < 0 || g_PlayerDistance > 1) return Plugin_Continue;
 
@@ -331,10 +368,10 @@ public Action:Timer_IsEnsnared(Handle:timer, any:client)
 	return Plugin_Stop;
 }
 
-stock bool:IsClientLaggingBehind(client)
+stock bool IsClientLaggingBehind(int client)
 {
-	new Float:g_TeamDistance = CalculateTeamDistance(client);
-	new Float:g_PlayerDistance = (L4D2Direct_GetFlowDistance(client) / g_MapFlowDistance);
+	float g_TeamDistance = CalculateTeamDistance(client);
+	float g_PlayerDistance = (L4D2Direct_GetFlowDistance(client) / g_MapFlowDistance);
 
 	if(g_PlayerDistance < 0 || g_PlayerDistance > 1) return false;
 	if (g_IgnoreDistance == 0.0 || g_PlayerDistance + g_IgnoreDistance >= g_TeamDistance || Ensnared[client] || IsIncapacitated(client))
@@ -344,9 +381,9 @@ stock bool:IsClientLaggingBehind(client)
 	return true;
 }
 
-stock bool:AnyClientsLaggingBehind()
+stock bool AnyClientsLaggingBehind()
 {
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == TEAM_SURVIVOR && IsPlayerAlive(i) && IsClientLaggingBehind(i))
 		{
@@ -356,10 +393,10 @@ stock bool:AnyClientsLaggingBehind()
 	return false;
 }
 
-stock ActiveSurvivors()
+stock int ActiveSurvivors()
 {
-	new count =	0;
-	for (new i = 1; i <= MaxClients; i++)
+	int count =	0;
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == TEAM_SURVIVOR && IsPlayerAlive(i))
 		{
@@ -369,12 +406,12 @@ stock ActiveSurvivors()
 	return count;
 }
 
-stock TeleportLaggingPlayer(client)
+stock void TeleportLaggingPlayer(int client)
 {
-	new Float:g_TargetDistance;
-	new Float:g_PlayerDistance;
-	new target = -1;
-	for (new i = 1; i <= MaxClients; i++)
+	float g_TargetDistance;
+	float g_PlayerDistance;
+	int target = -1;
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == TEAM_SURVIVOR && IsPlayerAlive(i) && i != client)
 		{
@@ -389,20 +426,20 @@ stock TeleportLaggingPlayer(client)
 	}
 	if (target > 0)
 	{
-		new Float:g_Origin[3];
+		float g_Origin[3];
 		GetClientAbsOrigin(target, g_Origin);
 		TeleportEntity(client, g_Origin, NULL_VECTOR, NULL_VECTOR);
 		DistanceWarning[client] = false;
 	}
 }
 
-stock TeleportRushingPlayer(client)
+stock void TeleportRushingPlayer(int client)
 {
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == TEAM_SURVIVOR && IsPlayerAlive(i) && !DistanceWarning[i] && i != client)
 		{
-			new Float:g_Origin[3];
+			float g_Origin[3];
 			GetClientAbsOrigin(i, g_Origin);
 			TeleportEntity(client, g_Origin, NULL_VECTOR, NULL_VECTOR);
 			DistanceWarning[client] = false;
@@ -411,17 +448,17 @@ stock TeleportRushingPlayer(client)
 	}
 }
 
-stock Float:CalculateTeamDistance(client)
+stock float CalculateTeamDistance(int client)
 {
-	new Float:g_TeamDistance = 0.0;
-	new counter = 0;
-	for (new i = 1; i <= MaxClients; i++)
+	float g_TeamDistance = 0.0;
+	int counter = 0;
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == TEAM_SURVIVOR /*&& !IsFakeClient(i)*/ && IsPlayerAlive(i) && i != client && !IsLagging[i])
 		{
 			if (i_IgnoreIncapacitated && !IsIncapacitated(i) || !i_IgnoreIncapacitated)
 			{
-				new Float:fPlayerflow = L4D2Direct_GetFlowDistance(i) / g_MapFlowDistance;
+				float fPlayerflow = L4D2Direct_GetFlowDistance(i) / g_MapFlowDistance;
 				if(fPlayerflow > 0 && fPlayerflow < 1)//in case player out of map
 				{
 					g_TeamDistance += fPlayerflow;
@@ -434,15 +471,15 @@ stock Float:CalculateTeamDistance(client)
 	return g_TeamDistance;
 }
 
-stock ParseMapConfigs()
+stock void ParseMapConfigs()
 {
 	
-	decl String:Path[PLATFORM_MAX_PATH];
-	decl String:mapname[64];
+	char Path[PLATFORM_MAX_PATH];
+	char mapname[64];
 	GetCurrentMap(mapname, sizeof(mapname));
 	Format(mapname, sizeof(mapname), "%s", mapname);
 	BuildPath(Path_SM, Path, sizeof(Path), "%s/%s.cfg", CONFIG_MAPS,mapname);
-	new Handle:h_MapFile = CreateKeyValues(mapname);
+	Handle h_MapFile = CreateKeyValues(mapname);
 	if (!FileToKeyValues(h_MapFile, Path))
 	{
 		CloseHandle(h_MapFile);
@@ -450,7 +487,7 @@ stock ParseMapConfigs()
 		return;
 	}
 	
-	decl String:s_value[32];
+	char s_value[32];
 	KvRewind(h_MapFile);
 	
 	
@@ -462,16 +499,13 @@ stock ParseMapConfigs()
 	
 	KvGetString(h_MapFile, "Ignore Extra Distance", s_value, sizeof(s_value));
 	g_IgnoreDistance = StringToFloat(s_value);
-		
-	
-	//configLoadCount = 1;
 	
 	CloseHandle(h_MapFile);
 }
 
-stock bool:IsSurvival()
+stock bool IsSurvival()
 {
-	decl String:GameType[128];
+	char GameType[128];
 	GetConVarString(FindConVar("mp_gamemode"), GameType, 128);
 	if (StrEqual(GameType, "survival"))
 	{
@@ -480,34 +514,34 @@ stock bool:IsSurvival()
 	return false;
 }
 
-stock bool:IsIncapacitated(client)
+stock bool IsIncapacitated(int client)
 {
 	return bool:GetEntProp(client, Prop_Send, "m_isIncapacitated");
 }
 
-public ConVarInfractionLimit(Handle:convar, const String:oldValue[], const String:newValue[])
+public ConVarInfractionLimit(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	i_InfractionLimit = GetConVarInt(h_InfractionLimit);
+	i_InfractionLimit = h_InfractionLimit.IntValue;
 }
 
-public ConVarSurvivorsRequired(Handle:convar, const String:oldValue[], const String:newValue[])
+public ConVarSurvivorsRequired(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	i_SurvivorsRequired = GetConVarInt(h_SurvivorsRequired);
+	i_SurvivorsRequired = h_SurvivorsRequired.IntValue;
 }
 
-public ConVarIgnoreIncapacitated(Handle:convar, const String:oldValue[], const String:newValue[])
+public ConVarIgnoreIncapacitated(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	i_IgnoreIncapacitated = GetConVarInt(h_IgnoreIncapacitated);
+	i_IgnoreIncapacitated = h_IgnoreIncapacitated.IntValue;
 }
 
-public ConVarIgnoreStraggler(Handle:convar, const String:oldValue[], const String:newValue[])
+public ConVarIgnoreStraggler(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	i_IgnoreStraggler = GetConVarInt(h_IgnoreStraggler);
+	i_IgnoreStraggler = h_IgnoreStraggler.IntValue;
 }
 
-public ConVarInfractionResult(Handle:convar, const String:oldValue[], const String:newValue[])
+public ConVarInfractionResult(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	i_InfractionResult = GetConVarInt(h_InfractionResult);
+	i_InfractionResult = h_InfractionResult.IntValue;
 }
 
 public Action PlayerLeftStart(Handle Timer)
@@ -517,19 +551,18 @@ public Action PlayerLeftStart(Handle Timer)
 		if (!b_LeftSaveRoom)
 		{
 			b_LeftSaveRoom = true;
-			CreateTimer(1.0, Timer_DistanceCheck, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+			if(DistanceCheckTimer == null) CreateTimer(1.0, Timer_DistanceCheck, _, TIMER_REPEAT);
+			PlayerLeftStartTimer = null;
+			return Plugin_Stop;
 		}
-	}
-	else
-	{
-		CreateTimer(1.0, PlayerLeftStart, _, TIMER_FLAG_NO_MAPCHANGE);
 	}
 	return Plugin_Continue;
 }
-bool:LeftStartArea()
+
+bool LeftStartArea()
 {
-	new ent = -1, maxents = GetMaxEntities();
-	for (new i = MaxClients+1; i <= maxents; i++)
+	int ent = -1, maxents = GetMaxEntities();
+	for (int i = MaxClients+1; i <= maxents; i++)
 	{
 		if (IsValidEntity(i))
 		{
@@ -552,4 +585,24 @@ bool:LeftStartArea()
 		}
 	}
 	return false;
+}
+
+void ResetTimer()
+{
+	if(PlayerLeftStartTimer != null) 
+	{
+		KillTimer(PlayerLeftStartTimer);
+		PlayerLeftStartTimer = null;
+	}
+	if(DistanceCheckTimer != null)
+	{
+		KillTimer(DistanceCheckTimer);
+		DistanceCheckTimer = null;
+	}
+}
+
+void ResetPlugin()
+{
+	g_iRoundStart = 0;
+	g_iPlayerSpawn = 0;
 }
