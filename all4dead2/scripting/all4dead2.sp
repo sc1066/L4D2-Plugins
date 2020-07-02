@@ -486,16 +486,6 @@ public Action:Command_SpawnUInfected(client, args) {
  * </remarks>
 */
 Do_SpawnInfected(client, const String:type[], bool:spawning_uncommon) {
-  
-  if(StrEqual(type, "tank") && BusyPlayersOnInfected())
-  {
-	new bot = CreateFakeClient("Infected Bot");
-	if (bot != 0)
-	{
-		ChangeClientTeam(bot,3);
-		CreateTimer(0.1,kickbot,bot);
-	}
-  }
 
 	new String:arguments[16];
 	new String:feedback[64];
@@ -1311,28 +1301,4 @@ public Action:kickbot(Handle:timer, any:client)
 	{
 		if (IsFakeClient(client)) KickClient(client);
 	}
-}
-
-bool:BusyPlayersOnInfected()
-{
-	for (new i=1;i<=MaxClients;i++)
-	{
-		if (IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) == 3)
-		{
-			if(IsPlayerGhost(i))
-				return false;
-			if(!IsPlayerAlive(i))
-				return false;
-
-			return true;
-		}
-	}
-	return false;
-}
-
-bool:IsPlayerGhost (client)
-{
-	if (GetEntProp(client, Prop_Send, "m_isGhost"))
-		return true;
-	return false;
 }
