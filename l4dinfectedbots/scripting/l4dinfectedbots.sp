@@ -4505,121 +4505,118 @@ public void ShowInfectedHUD(int src)
 		for (i = 1; i <= MaxClients; i++)
 		{
 			if (!IsClientInGame(i)) continue;
-			if (GameMode != 2 && !IsFakeClient(i))
+			if (GetClientMenu(i) == MenuSource_RawPanel || GetClientMenu(i) == MenuSource_None)
 			{
-				if (GetClientMenu(i) == MenuSource_RawPanel || GetClientMenu(i) == MenuSource_None)
+				if (GetClientTeam(i) == TEAM_INFECTED)
 				{
-					if (GetClientTeam(i) == TEAM_INFECTED)
+					// Work out what they're playing as
+					if (IsPlayerHunter(i))
 					{
-						// Work out what they're playing as
-						if (IsPlayerHunter(i))
+						strcopy(iClass, sizeof(iClass), "Hunter");
+						iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[0]) * 100);
+					}
+					else if (IsPlayerSmoker(i))
+					{
+						strcopy(iClass, sizeof(iClass), "Smoker");
+						iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[1]) * 100);
+					}
+					else if (IsPlayerBoomer(i))
+					{
+						strcopy(iClass, sizeof(iClass), "Boomer");
+						iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[2]) * 100);
+					}
+					else if (L4D2Version && IsPlayerSpitter(i)) 
+					{
+						strcopy(iClass, sizeof(iClass), "Spitter");
+						iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[3]) * 100);	
+					}
+					else if (L4D2Version && IsPlayerJockey(i)) 
+					{
+						strcopy(iClass, sizeof(iClass), "Jockey");
+						iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[4]) * 100);	
+					} 
+					else if (L4D2Version && IsPlayerCharger(i)) 
+					{
+						strcopy(iClass, sizeof(iClass), "Charger");
+						iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[5]) * 100);	
+					} 
+					else if (IsPlayerTank(i))
+					{
+						strcopy(iClass, sizeof(iClass), "Tank");
+						iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[6]) * 100);	
+					}
+					
+					if (PlayerIsAlive(i))
+					{
+						// Check to see if they are a ghost or not
+						if (IsPlayerGhost(i))
 						{
-							strcopy(iClass, sizeof(iClass), "Hunter");
-							iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[0]) * 100);
+							strcopy(iStatus, sizeof(iStatus), "GHOST");
 						}
-						else if (IsPlayerSmoker(i))
+						else Format(iStatus, sizeof(iStatus), "%i%%", iHP);
+					}
+					else
+					{
+						if (respawnDelay[i] > 0 && !DirectorSpawn)
 						{
-							strcopy(iClass, sizeof(iClass), "Smoker");
-							iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[1]) * 100);
-						}
-						else if (IsPlayerBoomer(i))
-						{
-							strcopy(iClass, sizeof(iClass), "Boomer");
-							iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[2]) * 100);
-						}
-						else if (L4D2Version && IsPlayerSpitter(i)) 
-						{
-							strcopy(iClass, sizeof(iClass), "Spitter");
-							iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[3]) * 100);	
-						}
-						else if (L4D2Version && IsPlayerJockey(i)) 
-						{
-							strcopy(iClass, sizeof(iClass), "Jockey");
-							iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[4]) * 100);	
+							Format(iStatus, sizeof(iStatus), "DEAD (%i)", respawnDelay[i]);
+							strcopy(iClass, sizeof(iClass), "");
+							// As a failsafe if they're dead/waiting set HP to 0
+							iHP = 0;
 						} 
-						else if (L4D2Version && IsPlayerCharger(i)) 
+						else if (respawnDelay[i] == 0 && GameMode != 2 && !DirectorSpawn)
 						{
-							strcopy(iClass, sizeof(iClass), "Charger");
-							iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[5]) * 100);	
-						} 
-						else if (IsPlayerTank(i))
-						{
-							strcopy(iClass, sizeof(iClass), "Tank");
-							iHP = RoundFloat((float(GetClientHealth(i)) / zombieHP[6]) * 100);	
+							Format(iStatus, sizeof(iStatus), "READY");
+							strcopy(iClass, sizeof(iClass), "");
+							// As a failsafe if they're dead/waiting set HP to 0
+							iHP = 0;
 						}
-						
-						if (PlayerIsAlive(i))
+						else if (respawnDelay[i] > 0 && DirectorSpawn && GameMode != 2)
 						{
-							// Check to see if they are a ghost or not
-							if (IsPlayerGhost(i))
-							{
-								strcopy(iStatus, sizeof(iStatus), "GHOST");
-							}
-							else Format(iStatus, sizeof(iStatus), "%i%%", iHP);
+							Format(iStatus, sizeof(iStatus), "DELAY (%i)", respawnDelay[i]);
+							strcopy(iClass, sizeof(iClass), "");
+							// As a failsafe if they're dead/waiting set HP to 0
+							iHP = 0;
+						} 
+						else if (respawnDelay[i] == 0 && DirectorSpawn && GameMode != 2)
+						{
+							Format(iStatus, sizeof(iStatus), "WAITING");
+							strcopy(iClass, sizeof(iClass), "");
+							// As a failsafe if they're dead/waiting set HP to 0
+							iHP = 0;
 						}
 						else
 						{
-							if (respawnDelay[i] > 0 && !DirectorSpawn)
-							{
-								Format(iStatus, sizeof(iStatus), "DEAD (%i)", respawnDelay[i]);
-								strcopy(iClass, sizeof(iClass), "");
-								// As a failsafe if they're dead/waiting set HP to 0
-								iHP = 0;
-							} 
-							else if (respawnDelay[i] == 0 && GameMode != 2 && !DirectorSpawn)
-							{
-								Format(iStatus, sizeof(iStatus), "READY");
-								strcopy(iClass, sizeof(iClass), "");
-								// As a failsafe if they're dead/waiting set HP to 0
-								iHP = 0;
-							}
-							else if (respawnDelay[i] > 0 && DirectorSpawn && GameMode != 2)
-							{
-								Format(iStatus, sizeof(iStatus), "DELAY (%i)", respawnDelay[i]);
-								strcopy(iClass, sizeof(iClass), "");
-								// As a failsafe if they're dead/waiting set HP to 0
-								iHP = 0;
-							} 
-							else if (respawnDelay[i] == 0 && DirectorSpawn && GameMode != 2)
-							{
-								Format(iStatus, sizeof(iStatus), "WAITING");
-								strcopy(iClass, sizeof(iClass), "");
-								// As a failsafe if they're dead/waiting set HP to 0
-								iHP = 0;
-							}
-							else
-							{
-								Format(iStatus, sizeof(iStatus), "DEAD");
-								strcopy(iClass, sizeof(iClass), "");
-								// As a failsafe if they're dead/waiting set HP to 0
-								iHP = 0;
-							}
-						}
-						
-						// Special case - if player is Tank and on fire, show the countdown
-						if (StrContains(iClass, "Tank", false) != -1 && isTankOnFire[i] && PlayerIsAlive(i))
-						{
-							Format(iStatus, sizeof(iStatus), "%s-FIRE(%i)", iStatus, burningTankTimeLeft[i]);
-						}
-						
-						if (IsFakeClient(i))
-						{
-							Format(lineBuf, sizeof(lineBuf), "%N-%s", i, iStatus);
-							pInfHUD.DrawItem(lineBuf);
-						}
-						else
-						{
-							Format(lineBuf, sizeof(lineBuf), "%N-%s-%s", i, iClass, iStatus);
-							pInfHUD.DrawItem(lineBuf);
+							Format(iStatus, sizeof(iStatus), "DEAD");
+							strcopy(iClass, sizeof(iClass), "");
+							// As a failsafe if they're dead/waiting set HP to 0
+							iHP = 0;
 						}
 					}
+					
+					// Special case - if player is Tank and on fire, show the countdown
+					if (StrContains(iClass, "Tank", false) != -1 && isTankOnFire[i] && PlayerIsAlive(i))
+					{
+						Format(iStatus, sizeof(iStatus), "%s-FIRE(%i)", iStatus, burningTankTimeLeft[i]);
+					}
+					
+					if (IsFakeClient(i))
+					{
+						Format(lineBuf, sizeof(lineBuf), "%N-%s", i, iStatus);
+						pInfHUD.DrawItem(lineBuf);
+					}
+					else
+					{
+						Format(lineBuf, sizeof(lineBuf), "%N-%s-%s", i, iClass, iStatus);
+						pInfHUD.DrawItem(lineBuf);
+					}
 				}
-				else
-				{
-					#if DEBUG
-					PrintToChat(i, "x01\x04[infhud]\x01 [%f] Not showing infected HUD as vote/menu (%i) is active", GetClientMenu(i), GetGameTime());
-					#endif
-				}
+			}
+			else
+			{
+				#if DEBUG
+				PrintToChat(i, "x01\x04[infhud]\x01 [%f] Not showing infected HUD as vote/menu (%i) is active", GetClientMenu(i), GetGameTime());
+				#endif
 			}
 		}
 	}
