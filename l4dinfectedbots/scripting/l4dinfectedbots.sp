@@ -2436,9 +2436,7 @@ public Action DisposeOfCowards(Handle timer, int coward)
 			{
 				int SpawnTime = GetURandomIntRange(h_InfectedSpawnTimeMin.IntValue, h_InfectedSpawnTimeMax.IntValue);
 				
-				if (GameMode == 2 && h_AdjustSpawnTimes.BoolValue && MaxPlayerZombies != HumansOnInfected())
-					SpawnTime = ( (SpawnTime / (MaxPlayerZombies - HumansOnInfected())) - (TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue) );
-				else if (GameMode == 1 && h_AdjustSpawnTimes.BoolValue)
+				if (h_AdjustSpawnTimes.BoolValue)
 					SpawnTime = SpawnTime - (TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue);
 				
 				if(SpawnTime<=0)
@@ -2538,7 +2536,7 @@ public Action evtPlayerDeath(Event event, const char[] name, bool dontBroadcast)
 		{
 			int SpawnTime = GetURandomIntRange(h_InfectedSpawnTimeMin.IntValue, h_InfectedSpawnTimeMax.IntValue);
 			if (h_AdjustSpawnTimes.BoolValue && MaxPlayerZombies != HumansOnInfected())
-				SpawnTime = (SpawnTime / (MaxPlayerZombies - HumansOnInfected())) - (TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue);
+				SpawnTime = SpawnTime  - (TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue);
 			
 			if(SpawnTime < 0)
 				SpawnTime = 1;
@@ -2916,12 +2914,12 @@ void CheckIfBotsNeeded(bool spawn_immediately, bool initial_spawn)
 				else // We use the normal time ..
 				{
 					InfectedBotQueue++;
-					if (GameMode == 2 && h_AdjustSpawnTimes.BoolValue && MaxPlayerZombies != HumansOnInfected())
-						CreateTimer(float( ((h_InfectedSpawnTimeMax.IntValue) / (MaxPlayerZombies - HumansOnInfected())) - (TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue) ), Spawn_InfectedBot, _, 0);
+					if (GameMode == 2 && h_AdjustSpawnTimes.BoolValue)
+						CreateTimer(float(h_InfectedSpawnTimeMax.IntValue - (TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue) ), Spawn_InfectedBot, _, 0);
 					else if (GameMode == 1 && h_AdjustSpawnTimes.BoolValue)
 						CreateTimer(float(h_InfectedSpawnTimeMax.IntValue - (TrueNumberOfAliveSurvivors() * h_ReducedSpawnTimesOnPlayer.IntValue) ), Spawn_InfectedBot, _, 0);
 					else
-					CreateTimer(float(h_InfectedSpawnTimeMax.IntValue), Spawn_InfectedBot, _, 0);
+						CreateTimer(float(h_InfectedSpawnTimeMax.IntValue), Spawn_InfectedBot, _, 0);
 				}
 			}
 		}
@@ -4460,7 +4458,7 @@ public void ShowInfectedHUD(int src)
 		return;
 	}
 	
-	// If no bots are alive, and if there is 5 or less players, no point in showing the HUD
+	// If no bots are alive, no point in showing the HUD
 	if (GameMode == 2 && !BotsAlive())
 	{
 		return;
