@@ -513,6 +513,7 @@
 #define SUICIDE_TIME 10
 #define DIRECTORSCRIPT_TYPE			"DirectorScript.MapScript.LocalScript.DirectorOptions"
 #define MODEL_TANK "models/infected/hulk.mdl"
+#define REWARD_SOUND "ui/littlereward.wav"
 
 // Variables
 static int InfectedRealCount; // Holds the amount of real infected players
@@ -859,6 +860,7 @@ public void OnPluginStart()
 	HookEvent("player_death", evtInfectedDeath);
 	HookEvent("player_spawn", evtInfectedSpawn);
 	HookEvent("player_hurt", evtInfectedHurt);
+	HookEvent("player_hurt", Player_Hurt);
 	HookEvent("player_team", evtTeamSwitch);
 	HookEvent("player_death", evtInfectedWaitSpawn);
 	HookEvent("ghost_spawn_time", evtInfectedWaitSpawn);
@@ -1692,6 +1694,8 @@ public void OnMapStart()
 	{
 		PrecacheModel(MODEL_TANK, true);
 	}
+	PrefetchSound(REWARD_SOUND);
+	PrecacheSound(REWARD_SOUND, true);
 
 	GetSpawnDisConvars();
 	iPlayersInServer = 0;
@@ -4715,6 +4719,17 @@ public Action evtInfectedDeath(Event event, const char[] name, bool dontBroadcas
 	}
 }
 
+public Action Player_Hurt(Event event, const char[] name, bool dontBroadcast) 
+{
+	int client = GetClientOfUserId(event.GetInt("userid"));
+	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	int dmg = event.GetInt("dmg_health");
+	if(GameMode == 2 || dmg == 0 || client <= 0 || client > MaxClients || !IsClientInGame(client) || GetClientTeam(client) != TEAM_SURVIVORS) return;
+	if(attacker <= 0 || attacker > MaxClients || !IsClientInGame(attacker) || IsFakeClient(attacker) || GetClientTeam(attacker) != TEAM_INFECTED) return;
+
+	EmitSoundToClient(attacker, REWARD_SOUND);
+}
+
 public Action evtInfectedHurt(Event event, const char[] name, bool dontBroadcast) 
 {
 	// The life of a regular special infected is pretty transient, they won't take many shots before they 
@@ -4728,7 +4743,7 @@ public Action evtInfectedHurt(Event event, const char[] name, bool dontBroadcast
 	
 	int client = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-	
+
 	if (FightOrDieTimer[client] != null)
 	{
 		KillTimer(FightOrDieTimer[client]);
