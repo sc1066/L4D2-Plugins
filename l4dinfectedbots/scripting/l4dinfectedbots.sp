@@ -11,6 +11,7 @@
 * WARNING	: Please use sourcemod's latest 1.7 branch snapshot.
 * Version 2.3.1
 	   - add reward sound in coop/survival/realism for real infected player.
+	   - prevet real infected player from fall damage in coop/survival/realism.
 
 * Version 2.3.0
 	   - fixed client console error "Material effects/spawn_sphere has bad reference count 0 when being bound" spam when playing infected in non-versus mode.
@@ -1905,10 +1906,12 @@ public Action InfectedBotBooterVersus(Handle Timer)
 
 public void OnClientPutInServer(int client)
 {
+	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+
 	// If is a bot, skip this function
 	if (IsFakeClient(client))
 		return;
-	
+
 	iPlayerTeam[client] = 1;
 	
 	// Durzel's code ***********************************************************************************
@@ -5282,5 +5285,17 @@ void ResetTimer()
 		KillTimer(infHUDTimer);
 		infHUDTimer = null;		
 	}
+}
+
+public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &damage, int &damageType)
+{
+	if(GameMode == 2 || victim <= 0 || victim > MaxClients || !IsClientInGame(victim) || IsFakeClient(victim)) return Plugin_Continue;
+	if(attacker <= 0 || attacker > MaxClients || !IsClientInGame(attacker) || IsFakeClient(attacker)) return Plugin_Continue;
+
+	if(attacker == victim && GetClientTeam(attacker) == TEAM_INFECTED && GetEntProp(attacker,Prop_Send,"m_zombieClass") != ZOMBIECLASS_TANK) 
+	{
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
 }
 ///////////////////////////////////////////////////////////////////////////
