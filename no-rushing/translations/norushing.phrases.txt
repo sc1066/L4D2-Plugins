@@ -7,14 +7,14 @@
 		"zho"				"[{green}No-Rush{default}] {1}請和{3}你的隊伍{2} 待在一起!"
 		"chi"				"[{green}No-Rush{default}] {1}请和{3}你的队伍{2} 待在一起!"
 	}
-	"Rushing Warning"
+	"Rushing Notice"
 	{
 		"#format"			"{1:s},{2:s}"
 		"en"				"[{green}No-Rush{default}] {1}Please Go Back! {2}I'm Warning You!"
 		"zho"				"[{green}No-Rush{default}] {1}請回返倖存者隊伍勿跑圖! {2}警告你!"
 		"chi"				"[{green}No-Rush{default}] {1}請回返生还者队伍勿跑圖! {2}警告你!"
 	}
-	"Rushing Notice"
+	"Rushing Warning"
 	{
 		"#format"			"{1:s},{2:s},{3:s},{4:s},{5:s},{6:i},{7:i}"
 		"en"				"[{green}No-Rush{default}] {1}Rushing {2}Is Prohibited! Trials: {3}{6} {4}/ {5}{7}"

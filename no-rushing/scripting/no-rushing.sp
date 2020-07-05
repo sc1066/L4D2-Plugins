@@ -4,7 +4,7 @@
 
 #define MAX_ENTITIES 2048
 
-#define PLUGIN_VERSION "1.4"
+#define PLUGIN_VERSION "1.5"
 
 #define PLUGIN_NAME "Ready Up Module: No Rushing"
 #define PLUGIN_DESCRIPTION "Prevents Rushers From Rushing Then Teleports Them Back To Their Teammates."
@@ -265,14 +265,14 @@ public Action Timer_DistanceCheck(Handle timer)
 			g_TeamDistance = CalculateTeamDistance(i);
 			g_PlayerDistance = (L4D2Direct_GetFlowDistance(i) / g_MapFlowDistance);
 			
-			if(g_PlayerDistance < 0.0 || g_PlayerDistance > 1.0) continue;
+			if(g_PlayerDistance < 0.0 || g_PlayerDistance > 1.0 || g_TeamDistance == -1.0) continue;
 
 			if (DistanceWarning[i] && g_TeamDistance + g_WarningDistance < g_PlayerDistance)
 			{
 				if (g_WarningCounter[i] + 1 < i_InfractionLimit)
 				{
 					g_WarningCounter[i]++;
-					C_PrintToChat(i, "%s %T", s_rup, "Rushing Notice", i, white, orange, green, white, green, g_WarningCounter[i], i_InfractionLimit);
+					C_PrintToChat(i, "%s %T", s_rup, "Rushing Warning", i, white, orange, green, white, green, g_WarningCounter[i], i_InfractionLimit);
 					TeleportRushingPlayer(i);
 				}
 				else
@@ -299,7 +299,7 @@ public Action Timer_DistanceCheck(Handle timer)
 			else if (!DistanceWarning[i] && g_TeamDistance + g_NoticeDistance < g_PlayerDistance)
 			{
 				DistanceWarning[i] = true;
-				C_PrintToChat(i, "%s %T", s_rup, "Rushing Warning", i, white, orange);
+				C_PrintToChat(i, "%s %T", s_rup, "Rushing Notice", i, white, orange);
 			}
 			else if (DistanceWarning[i] && g_TeamDistance + g_NoticeDistance > g_PlayerDistance)
 			{
@@ -316,7 +316,7 @@ stock bool IsClientLaggingBehind(int client)
 	float g_PlayerDistance = (L4D2Direct_GetFlowDistance(client) / g_MapFlowDistance);
 
 	//C_PrintToChatAll("%N: g_PlayerDistance %f,g_IgnoreDistance %f,g_TeamDistance %f",client,g_PlayerDistance,g_IgnoreDistance,g_TeamDistance);
-	if(g_PlayerDistance < 0.0 || g_PlayerDistance > 1.0) return false;
+	if(g_PlayerDistance < 0.0 || g_PlayerDistance > 1.0 || g_TeamDistance == -1.0) return false;
 	if (g_IgnoreDistance == 0.0 || g_PlayerDistance + g_IgnoreDistance > g_TeamDistance || IsClientDown(client))
 	{
 		return false;
@@ -399,7 +399,7 @@ stock float CalculateTeamDistance(int client)
 		}
 	}
 	if(counter > 1) g_TeamDistance /= counter;
-	else g_TeamDistance = 0.0;
+	else g_TeamDistance = -1.0;
 	return g_TeamDistance;
 }
 

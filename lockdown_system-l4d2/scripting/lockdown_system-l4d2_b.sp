@@ -1,12 +1,15 @@
-#pragma semicolon 1
+
 #include <sourcemod>
 #include <sdktools>
 #include <glow>
 
-#define PLUGIN_VERSION "2.0"
+#pragma semicolon 1
+#pragma newdecls required //強制1.7以後的新語法
+#define PLUGIN_VERSION "2.1"
 
 #define UNLOCK 0
 #define LOCK 1
+#define MODEL_TANK "models/infected/hulk.mdl"
 
 ConVar lsAnnounce, lsAntiFarmDuration, lsDuration, lsMobs, lsTankDemolition, lsType, lsNearByAllSurvivor,
 	cvarGameMode;
@@ -17,6 +20,7 @@ bool bAntiFarmInit, bLockdownInit, bLDFinished, bChoiceStarted, bAnnounce, bTank
 char sGameMode[16], sKeyMan[128], sLastName[2048][128];
 Handle hAntiFarmTime = null, hLockdownTime = null;
 bool bSpawnTank,bSurvivorsAssembleAlready;
+static Handle hCreateTank = null;
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -69,8 +73,6 @@ public void OnPluginStart()
 	lsTankDemolition.AddChangeHook(OnLSCVarsChanged);
 	lsNearByAllSurvivor.AddChangeHook(OnLSCVarsChanged);
 	
-	AutoExecConfig(true, "lockdown_system-l4d2");
-	
 	HookEvent("round_start", OnRoundStart);
 	HookEvent("tank_killed", OnTankKilled);
 	
@@ -78,6 +80,23 @@ public void OnPluginStart()
 	HookEvent("mission_lost", OnRoundEvents);
 	
 	HookEvent("player_use", OnPlayerUsePre, EventHookMode_Pre);
+
+	Handle hGameConf = LoadGameConfigFile("lockdown_system-l4d2");
+	if( hGameConf == null )
+	{
+		SetFailState("Unable to find gamedata \"lockdown_system-l4d2\".");
+	}
+	StartPrepSDKCall(SDKCall_Static);
+	if (!PrepSDKCall_SetFromConf(hGameConf, SDKConf_Signature, "NextBotCreatePlayerBot<Tank>"))
+		SetFailState("Unable to find NextBotCreatePlayerBot<Tank> signature in gamedata file.");
+	PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
+	PrepSDKCall_SetReturnInfo(SDKType_CBasePlayer, SDKPass_Pointer);
+	hCreateTank = EndPrepSDKCall();
+	if (hCreateTank == null)
+		SetFailState("Cannot initialize NextBotCreatePlayerBot<Tank> SDKCall, signature is broken.") ;
+	delete hGameConf;
+
+	AutoExecConfig(true, "lockdown_system-l4d2");
 }
 
 public void OnLSCVarsChanged(ConVar cvar, const char[] sOldValue, const char[] sNewValue)
@@ -150,6 +169,11 @@ public void OnMapStart()
 		if (!IsSoundPrecached("ambient/alarms/klaxon1.wav"))
 		{
 			PrecacheSound("ambient/alarms/klaxon1.wav", true);
+		}
+
+		if (!IsModelPrecached(MODEL_TANK))
+		{
+			PrecacheModel(MODEL_TANK, true);
 		}
 	}
 }
@@ -832,6 +856,7 @@ stock bool IsCommonInfected(int entity)
 stock void ExecuteSpawn(int client, char[] sInfected, int iCount)
 {
 	char sCommand[16];
+	bool bTank = false;
 	if (StrContains(sInfected, "mob", false) != -1)
 	{
 		strcopy(sCommand, sizeof(sCommand), "z_spawn");
@@ -840,17 +865,79 @@ stock void ExecuteSpawn(int client, char[] sInfected, int iCount)
 	{
 		strcopy(sCommand, sizeof(sCommand), "z_spawn_old");
 	}
+	if (StrContains(sInfected, "tank", false) != -1)
+		bTank = true;
 	
 	int iFlags = GetCommandFlags(sCommand);
 	SetCommandFlags(sCommand, iFlags & ~FCVAR_CHEAT);
-	for (int i = 0; i < iCount; i++)
+	if (bTank)
 	{
+		bool resetGhostState[MAXPLAYERS+1];
+		bool resetIsAlive[MAXPLAYERS+1];
+		bool resetLifeState[MAXPLAYERS+1];
+		for (int i=1; i<=MaxClients; i++){ 
+			if (i == client) continue; //dont disable the chosen one
+			if (!IsClientInGame(i)) continue; //not ingame? skip
+			if (GetClientTeam(i) != 3) continue; //not infected? skip
+			if (IsFakeClient(i)) continue; //a bot? skip
+			
+			if (IsPlayerGhost(i)){
+				resetGhostState[i] = true;
+				SetPlayerGhostStatus(i, false);
+				resetIsAlive[i] = true; 
+				SetPlayerIsAlive(i, true);
+			}
+			else if (!IsPlayerAlive(i)){
+				resetLifeState[i] = true;
+				SetPlayerLifeState(i, false);
+			}
+		}
+		int tankbot = CreateFakeClient("Lock Down Tank Bot");
+		ChangeClientTeam(tankbot, 3);
 		FakeClientCommand(client, "%s %s", sCommand, sInfected);
+		// We restore the player's status
+		for (int i=1; i<=MaxClients; i++){
+			if (resetGhostState[i]) SetPlayerGhostStatus(i, true);
+			if (resetIsAlive[i]) SetPlayerIsAlive(i, false);
+			if (resetLifeState[i]) SetPlayerLifeState(i, true);
+		}
+		float Origin[3], Angles[3];
+		GetClientAbsOrigin(tankbot, Origin);
+		GetClientAbsAngles(tankbot, Angles);
+		if (IsFakeClient(tankbot)) KickClient(tankbot);
+		iCount--;
+		for (int i = 0; i < iCount; i++)
+		{
+			tankbot = SDKCall(hCreateTank, "Infected Bot Tank"); //召喚坦克
+			if (tankbot > 0 && IsValidClient(tankbot))
+			{
+				SetEntityModel(tankbot, MODEL_TANK);
+				ChangeClientTeam(tankbot, 3);
+				SetEntProp(tankbot, Prop_Send, "m_usSolidFlags", 16);
+				SetEntProp(tankbot, Prop_Send, "movetype", 2);
+				SetEntProp(tankbot, Prop_Send, "deadflag", 0);
+				SetEntProp(tankbot, Prop_Send, "m_lifeState", 0);
+				//SetEntProp(tankbot, Prop_Send, "m_fFlags", 129);
+				SetEntProp(tankbot, Prop_Send, "m_iObserverMode", 0);
+				SetEntProp(tankbot, Prop_Send, "m_iPlayerState", 0);
+				SetEntProp(tankbot, Prop_Send, "m_zombieState", 0);
+				DispatchSpawn(tankbot);
+				ActivateEntity(tankbot);
+				TeleportEntity(tankbot, Origin, Angles, NULL_VECTOR); //移動到相同位置
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < iCount; i++)
+		{
+			FakeClientCommand(client, "%s %s", sCommand, sInfected);
+		}
 	}
 	SetCommandFlags(sCommand, iFlags);
 }
 
-HasTwoCheckpointDoorMap()
+bool HasTwoCheckpointDoorMap()
 {
 	char sMap[64];
 	GetCurrentMap(sMap, sizeof(sMap));
@@ -860,4 +947,41 @@ HasTwoCheckpointDoorMap()
 	}
 	
 	return false;
+}
+
+stock void SetPlayerGhostStatus(int client, bool ghost)
+{
+	if(ghost){	
+		SetEntProp(client, Prop_Send, "m_isGhost", 1, 1);
+	}else{
+		SetEntProp(client, Prop_Send, "m_isGhost", 0, 1);
+	}
+}
+stock void SetPlayerIsAlive(int client, bool alive)
+{
+	int offset = FindSendPropInfo("CTransitioningPlayer", "m_isAlive");
+	if (alive) SetEntData(client, offset, 1, 1, true);
+	else SetEntData(client, offset, 0, 1, true);
+}
+stock void SetPlayerLifeState(int client, bool ready)
+{
+	if (ready) SetEntProp(client, Prop_Data, "m_lifeState", 1, 1);
+	else SetEntProp(client, Prop_Data, "m_lifeState", 0, 1);
+}
+stock bool IsPlayerGhost(int client)
+{
+	if (GetEntProp(client, Prop_Send, "m_isGhost", 1)) return true;
+	return false;
+}
+
+bool IsValidClient(int client, bool replaycheck = true)
+{
+	if (client <= 0 || client > MaxClients) return false;
+	if (!IsClientInGame(client)) return false;
+	//if (GetEntProp(client, Prop_Send, "m_bIsCoaching")) return false;
+	if (replaycheck)
+	{
+		if (IsClientSourceTV(client) || IsClientReplay(client)) return false;
+	}
+	return true;
 }

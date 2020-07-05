@@ -1,6 +1,6 @@
 /********************************************************************************************
 * Plugin	: L4D/L4D2 InfectedBots (Versus Coop/Coop Versus)
-* Version	: 2.3.0
+* Version	: 2.3.1
 * Game		: Left 4 Dead 1 & 2
 * Author	: djromero (SkyDavid, David) and MI 5 and Harry Potter
 * Testers	: Myself, MI 5
@@ -9,6 +9,9 @@
 * Purpose	: This plugin spawns infected bots in L4D1, and gives greater control of the infected bots in L4D1/L4D2.
 * 
 * WARNING	: Please use sourcemod's latest 1.7 branch snapshot.
+* Version 2.3.1
+	   - add reward sound in coop/survival/realism for real infected player.
+
 * Version 2.3.0
 	   - fixed client console error "Material effects/spawn_sphere has bad reference count 0 when being bound" spam when playing infected in non-versus mode.
 	   - special max limit now counts tank in all gamemode.
@@ -494,7 +497,7 @@
 
 #pragma semicolon 1
 #pragma newdecls required //強制1.7以後的新語法
-#define PLUGIN_VERSION "2.3.0"
+#define PLUGIN_VERSION "2.3.1"
 
 #define DEBUG 0
 
