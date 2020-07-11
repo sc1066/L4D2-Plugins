@@ -10,8 +10,9 @@
 * 
 * WARNING	: Please use sourcemod's latest 1.7 branch snapshot.
 * Version 2.3.1
-	   - add reward sound in coop/survival/realism for real infected player.
+	   - added reward sound in coop/survival/realism for real infected player.
 	   - prevet real infected player from fall damage in coop/survival/realism.
+	   - fixes the music glitch, added ClientCommand(client, "music_dynamic_stop_playing) when spawn;
 
 * Version 2.3.0
 	   - fixed client console error "Material effects/spawn_sphere has bad reference count 0 when being bound" spam when playing infected in non-versus mode.
@@ -1958,10 +1959,7 @@ public Action CheckQueue(int client, int args)
 }
 
 public Action JoinInfected(int client, int args)
-{
-	//SetEntProp(client,Prop_Send,"m_isCulling",1);
-	//ClientCommand(client, "+use");
-		
+{	
 	if (client && (GameMode == 1 || GameMode == 3) && h_JoinableTeams.BoolValue)
 	{
 		if ((h_AdminJoinInfected.BoolValue && IsPlayerGenericAdmin(client)) || !h_AdminJoinInfected.BoolValue)
@@ -2048,7 +2046,6 @@ public Action Console_ZLimit(int client, int args)
 		}
 		else if(newlimit!=MaxPlayerZombies)
 		{
-
 			SetConVarInt(FindConVar("l4d_infectedbots_max_specials"), newlimit);
 			i_OriginalMaxPlayerZombies = newlimit;
 			C_PrintToChatAll("[{olive}TS{default}] {lightgreen}%N{default}: %t", client, "Special Infected Limit has been changed",newlimit);	
@@ -2411,7 +2408,198 @@ public Action evtPlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 	if (IsFakeClient(client) && GameMode == 2 && !IsPlayerTank(client))
 		CreateTimer(0.1, Timer_SetUpBotGhost, client, TIMER_FLAG_NO_MAPCHANGE);
 	
-	
+	// This fixes the music glitch thats been bothering me and many players for a long time. The music keeps playing over and over when it shouldn't. Doesn't execute
+	// on versus.
+	if (!L4D2Version && GameMode != 2 && !IsFakeClient(client))
+	{
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Hospital");
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Airport");
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Farm");
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Small_Town");
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Garage");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Hospital");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Airport");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Small_Town");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Farm");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Garage");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A2");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A3");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Tank");
+		ClientCommand(client, "music_dynamic_stop_playing Event.TankMidpoint");
+		ClientCommand(client, "music_dynamic_stop_playing Event.TankBrothers");
+		ClientCommand(client, "music_dynamic_stop_playing Event.WitchAttack");
+		ClientCommand(client, "music_dynamic_stop_playing Event.WitchBurning");
+		ClientCommand(client, "music_dynamic_stop_playing Event.WitchRage");
+		ClientCommand(client, "music_dynamic_stop_playing Event.HunterPounce");
+		ClientCommand(client, "music_dynamic_stop_playing Event.SmokerChoke");
+		ClientCommand(client, "music_dynamic_stop_playing Event.SmokerDrag");
+		ClientCommand(client, "music_dynamic_stop_playing Event.VomitInTheFace");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangTwoHands");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangOneHand");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangFingers");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangAboutToFall");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangFalling");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Down");
+		ClientCommand(client, "music_dynamic_stop_playing Event.BleedingOut");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Down");
+	}
+	else if (L4D2Version && GameMode != 2 && !IsFakeClient(client))
+	{
+		// Music when Mission Starts
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Mall");
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Plankcountry");
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_Milltown");
+		ClientCommand(client, "music_dynamic_stop_playing Event.MissionStart_BaseLoop_BigEasy");
+		
+		// Checkpoints
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Mall");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Plankcountry");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_Milltown");
+		ClientCommand(client, "music_dynamic_stop_playing Event.CheckPointBaseLoop_BigEasy");
+		
+		// Zombat
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_1");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_1");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_1");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_2");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_2");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_2");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_3");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_3");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_3");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_4");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_4");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_4");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_5");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_5");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_5");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_6");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_6");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_6");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_7");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_7");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_7");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_8");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_8");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_8");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_9");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_9");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_9");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_10");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_10");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_10");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_11");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_11");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_11");
+		
+		// Zombat specific maps
+		
+		// C1 Mall
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat2_Intro_Mall");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_Intro_Mall");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_A_Mall");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_B_Mall");
+		
+		// A2 Fairgrounds
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_Intro_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat2_Intro_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_Intro_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_A_Fairgrounds");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_B_Fairgrounds");
+		
+		// C3 Plankcountry
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_PlankCountry");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_A_PlankCountry");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat_B_PlankCountry");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat2_Intro_Plankcountry");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_Intro_Plankcountry");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_A_Plankcountry");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_B_Plankcountry");
+		
+		// A2 Milltown
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat2_Intro_Milltown");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_Intro_Milltown");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_A_Milltown");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_B_Milltown");
+		
+		// C5 BigEasy
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat2_Intro_BigEasy");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_Intro_BigEasy");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_A_BigEasy");
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_B_BigEasy");
+		
+		// A2 Clown
+		ClientCommand(client, "music_dynamic_stop_playing Event.Zombat3_Intro_Clown");
+		
+		// Death
+		
+		// ledge hang
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangTwoHands");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangOneHand");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangFingers");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangAboutToFall");
+		ClientCommand(client, "music_dynamic_stop_playing Event.LedgeHangFalling");
+		
+		// Down
+		// Survivor is down and being beaten by infected
+		
+		ClientCommand(client, "music_dynamic_stop_playing Event.Down");
+		ClientCommand(client, "music_dynamic_stop_playing Event.BleedingOut");
+		
+		// Survivor death
+		// This is for the death of an individual survivor to be played after the health meter has reached zero
+		
+		ClientCommand(client, "music_dynamic_stop_playing Event.SurvivorDeath");
+		ClientCommand(client, "music_dynamic_stop_playing Event.ScenarioLose");
+		
+		// Bosses
+		
+		// Tank
+		ClientCommand(client, "music_dynamic_stop_playing Event.Tank");
+		ClientCommand(client, "music_dynamic_stop_playing Event.TankMidpoint");
+		ClientCommand(client, "music_dynamic_stop_playing Event.TankBrothers");
+		ClientCommand(client, "music_dynamic_stop_playing C2M5.RidinTank1");
+		ClientCommand(client, "music_dynamic_stop_playing C2M5.RidinTank2");
+		ClientCommand(client, "music_dynamic_stop_playing C2M5.BadManTank1");
+		ClientCommand(client, "music_dynamic_stop_playing C2M5.BadManTank2");
+		
+		// Witch
+		ClientCommand(client, "music_dynamic_stop_playing Event.WitchAttack");
+		ClientCommand(client, "music_dynamic_stop_playing Event.WitchBurning");
+		ClientCommand(client, "music_dynamic_stop_playing Event.WitchRage");
+		ClientCommand(client, "music_dynamic_stop_playing Event.WitchDead");
+		
+		// mobbed
+		ClientCommand(client, "music_dynamic_stop_playing Event.Mobbed");
+		
+		// Hunter
+		ClientCommand(client, "music_dynamic_stop_playing Event.HunterPounce");
+		
+		// Smoker
+		ClientCommand(client, "music_dynamic_stop_playing Event.SmokerChoke");
+		ClientCommand(client, "music_dynamic_stop_playing Event.SmokerDrag");
+		
+		// Boomer
+		ClientCommand(client, "music_dynamic_stop_playing Event.VomitInTheFace");
+		
+		// Charger
+		ClientCommand(client, "music_dynamic_stop_playing Event.ChargerSlam");
+		
+		// Jockey
+		ClientCommand(client, "music_dynamic_stop_playing Event.JockeyRide");
+		
+		// Spitter
+		ClientCommand(client, "music_dynamic_stop_playing Event.SpitterSpit");
+		ClientCommand(client, "music_dynamic_stop_playing Event.SpitterBurn");
+	}	
+
 	return Plugin_Continue;
 }
 
