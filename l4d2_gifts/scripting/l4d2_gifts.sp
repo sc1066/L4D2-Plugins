@@ -1,4 +1,4 @@
-#define PLUGIN_VERSION		"1.4.1"
+#define PLUGIN_VERSION		"1.5"
 
 /*
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -636,9 +636,9 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 		return;
 	
 	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	//int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	
-	if (IsValidClient(victim) && GetClientTeam(victim) == 3)
+	if (attacker != victim && IsValidClient(victim) && GetClientTeam(victim) == 3)
 	{
 		if(Infected_Admitted(victim) == 8)
 		{
