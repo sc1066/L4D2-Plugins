@@ -550,7 +550,7 @@ static int BotReady; // Used to determine how many bots are ready, used only for
 static int ZOMBIECLASS_TANK; // This value varies depending on which L4D game it is, holds the the tank class value
 static int GetSpawnTime[MAXPLAYERS+1]; // Used for the HUD on getting spawn times of players
 static int iPlayersInServer;
-static int iPlayersInSurvivorTeam = 0;
+static int iPlayersInSurvivorTeam;
 
 
 // Booleans
@@ -1296,6 +1296,7 @@ public Action evtRoundStart(Event event, const char[] name, bool dontBroadcast)
 	if (b_HasRoundStarted)
 		return;
 
+	iPlayersInSurvivorTeam = 0;
 	b_LeftSaveRoom = false;
 	b_HasRoundEnded = false;
 
@@ -1407,6 +1408,8 @@ public Action PluginStart(Handle timer)
 
 		SetConVarInt(FindConVar("music_manager"), 0); //turn off all music
 	}
+
+	CreateTimer(1.0,ColdDown_Timer,_,TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action evtPlayerFirstSpawned(Event event, const char[] name, bool dontBroadcast) 
@@ -1562,6 +1565,7 @@ public Action evtRoundEnd (Event event, const char[] name, bool dontBroadcast)
 
 public void OnMapStart()
 {
+	iPlayersInSurvivorTeam = 0;
 	if (!IsModelPrecached(MODEL_TANK))
 	{
 		PrecacheModel(MODEL_TANK, true);
