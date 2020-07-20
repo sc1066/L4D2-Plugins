@@ -5,7 +5,7 @@
 
 #pragma semicolon 1
 #pragma newdecls required //強制1.7以後的新語法
-#define PLUGIN_VERSION "2.1"
+#define PLUGIN_VERSION "2.2"
 
 #define UNLOCK 0
 #define LOCK 1
@@ -203,11 +203,15 @@ public void OnTankKilled(Event event, const char[] name, bool dontBroadcast)
 		return;
 	}
 	
-	int tank = GetClientOfUserId(event.GetInt("userid"));
-	if (tank)
-	{
-		ExecuteSpawn(tank, "tank auto", 1);
-	}
+	CreateTimer(1.0, Timer_SpawnTank,_,TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action Timer_SpawnTank(Handle timer)
+{
+	if(RealFreePlayersOnInfected())
+		CheatCommand(GetRandomClient(), "z_spawn_old", "tank auto");
+	else
+		ExecuteSpawn(GetRandomClient(), "tank auto", 1, true);
 }
 
 public void OnRoundEvents(Event event, const char[] name, bool dontBroadcast)
@@ -334,7 +338,7 @@ public Action OnPlayerUsePre(Event event, const char[] name, bool dontBroadcast)
 
 				if(bTankDemolition && !bSpawnTank) 
 				{
-					ExecuteSpawn(user, "tank auto", 1);
+					ExecuteSpawn(user, "tank auto", 1, true);
 					bSpawnTank = true;
 				}
 				
@@ -583,7 +587,7 @@ public Action LaunchTankDemolition(Handle timer)
 		return Plugin_Stop;
 	}
 	
-	ExecuteSpawn(GetRandomClient(), "tank auto", 3);
+	ExecuteSpawn(GetRandomClient(), "tank auto", 3, true);
 	if (bAnnounce)
 	{
 		PrintToChatAll("\x05[\x03LS\x05]\x01 Tank Demolition Underway!");
@@ -853,10 +857,9 @@ stock bool IsCommonInfected(int entity)
 	return false;
 }
 
-stock void ExecuteSpawn(int client, char[] sInfected, int iCount)
+stock void ExecuteSpawn(int client, char[] sInfected, int iCount, bool btank = false)
 {
 	char sCommand[16];
-	bool bTank = false;
 	if (StrContains(sInfected, "mob", false) != -1)
 	{
 		strcopy(sCommand, sizeof(sCommand), "z_spawn");
@@ -865,12 +868,10 @@ stock void ExecuteSpawn(int client, char[] sInfected, int iCount)
 	{
 		strcopy(sCommand, sizeof(sCommand), "z_spawn_old");
 	}
-	if (StrContains(sInfected, "tank", false) != -1)
-		bTank = true;
 	
 	int iFlags = GetCommandFlags(sCommand);
 	SetCommandFlags(sCommand, iFlags & ~FCVAR_CHEAT);
-	if (bTank)
+	if (btank)
 	{
 		bool resetGhostState[MAXPLAYERS+1];
 		bool resetIsAlive[MAXPLAYERS+1];
@@ -904,26 +905,28 @@ stock void ExecuteSpawn(int client, char[] sInfected, int iCount)
 		float Origin[3], Angles[3];
 		GetClientAbsOrigin(tankbot, Origin);
 		GetClientAbsAngles(tankbot, Angles);
-		if (IsFakeClient(tankbot)) KickClient(tankbot);
-		iCount--;
-		for (int i = 0; i < iCount; i++)
+		KickClient(tankbot);
+		if(IsPlayerAlive(tankbot))
 		{
-			tankbot = SDKCall(hCreateTank, "Infected Bot Tank"); //召喚坦克
-			if (tankbot > 0 && IsValidClient(tankbot))
+			iCount--;
+			for (int i = 0; i < iCount; i++)
 			{
-				SetEntityModel(tankbot, MODEL_TANK);
-				ChangeClientTeam(tankbot, 3);
-				SetEntProp(tankbot, Prop_Send, "m_usSolidFlags", 16);
-				SetEntProp(tankbot, Prop_Send, "movetype", 2);
-				SetEntProp(tankbot, Prop_Send, "deadflag", 0);
-				SetEntProp(tankbot, Prop_Send, "m_lifeState", 0);
-				//SetEntProp(tankbot, Prop_Send, "m_fFlags", 129);
-				SetEntProp(tankbot, Prop_Send, "m_iObserverMode", 0);
-				SetEntProp(tankbot, Prop_Send, "m_iPlayerState", 0);
-				SetEntProp(tankbot, Prop_Send, "m_zombieState", 0);
-				DispatchSpawn(tankbot);
-				ActivateEntity(tankbot);
-				TeleportEntity(tankbot, Origin, Angles, NULL_VECTOR); //移動到相同位置
+				tankbot = SDKCall(hCreateTank, "Infected Bot Tank"); //召喚坦克
+				if (tankbot > 0 && IsValidClient(tankbot))
+				{
+					SetEntityModel(tankbot, MODEL_TANK);
+					ChangeClientTeam(tankbot, 3);
+					SetEntProp(tankbot, Prop_Send, "m_usSolidFlags", 16);
+					SetEntProp(tankbot, Prop_Send, "movetype", 2);
+					SetEntProp(tankbot, Prop_Send, "deadflag", 0);
+					SetEntProp(tankbot, Prop_Send, "m_lifeState", 0);
+					SetEntProp(tankbot, Prop_Send, "m_iObserverMode", 0);
+					SetEntProp(tankbot, Prop_Send, "m_iPlayerState", 0);
+					SetEntProp(tankbot, Prop_Send, "m_zombieState", 0);
+					DispatchSpawn(tankbot);
+					ActivateEntity(tankbot);
+					TeleportEntity(tankbot, Origin, Angles, NULL_VECTOR); //移動到相同位置
+				}
 			}
 		}
 	}
@@ -984,4 +987,25 @@ bool IsValidClient(int client, bool replaycheck = true)
 		if (IsClientSourceTV(client) || IsClientReplay(client)) return false;
 	}
 	return true;
+}
+
+stock void CheatCommand(int client,  char[] command, char[] arguments = "")
+{
+	int userFlags = GetUserFlagBits(client);
+	SetUserFlagBits(client, ADMFLAG_ROOT);
+	int flags = GetCommandFlags(command);
+	SetCommandFlags(command, flags & ~FCVAR_CHEAT);
+	FakeClientCommand(client, "%s %s", command, arguments);
+	SetCommandFlags(command, flags);
+	SetUserFlagBits(client, userFlags);
+}
+
+bool RealFreePlayersOnInfected ()
+{
+	for (int i=1;i<=MaxClients;i++)
+	{
+		if (IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) == 3 && (IsPlayerGhost(i) || !IsPlayerAlive(i)))
+			return true;
+	}
+	return false;
 }

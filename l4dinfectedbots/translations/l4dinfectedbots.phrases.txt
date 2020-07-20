@@ -74,10 +74,10 @@
 	}
 	"Current status"
 	{
-		"#format"		"{1:d},{2:d},{3:d}"
-		"en"			"Numbers of Alive Survivor: {1}, Infected Limit: {2}, Tank Health: {3}"
-		"zho"			"目前倖存者存活人數: {1}, 特感上限: {2}, Tank血量: {3}"
-		"chi"			"目前生还者存活人数: {1}, 特感上限: {2}, Tank血量: {3}"
+		"#format"		"{1:d},{2:d},{3:d},{4:d}"
+		"en"			"Numbers of Alive Survivor: {1}, Infected Limit: {2}, Tank Health: {3}, Common Limit: {4}"
+		"zho"			"目前倖存者存活人數: {1}, 特感上限: {2}, Tank血量: {3}, 殭屍數量: {4}"
+		"chi"			"目前生还者存活人数: {1}, 特感上限: {2}, Tank血量: {3}, 僵尸数量: {4}"
 	}
 	"sm_zs"
 	{
