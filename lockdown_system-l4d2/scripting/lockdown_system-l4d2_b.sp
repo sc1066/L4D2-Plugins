@@ -902,12 +902,11 @@ stock void ExecuteSpawn(int client, char[] sInfected, int iCount, bool btank = f
 			if (resetIsAlive[i]) SetPlayerIsAlive(i, false);
 			if (resetLifeState[i]) SetPlayerLifeState(i, true);
 		}
-		float Origin[3], Angles[3];
-		GetClientAbsOrigin(tankbot, Origin);
-		GetClientAbsAngles(tankbot, Angles);
-		KickClient(tankbot);
 		if(IsPlayerAlive(tankbot))
 		{
+			float Origin[3], Angles[3];
+			GetClientAbsOrigin(tankbot, Origin);
+			GetClientAbsAngles(tankbot, Angles);
 			iCount--;
 			for (int i = 0; i < iCount; i++)
 			{
@@ -929,6 +928,7 @@ stock void ExecuteSpawn(int client, char[] sInfected, int iCount, bool btank = f
 				}
 			}
 		}
+		KickClient(tankbot);
 	}
 	else
 	{
