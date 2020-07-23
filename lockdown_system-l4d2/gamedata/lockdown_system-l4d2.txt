@@ -1,19 +1,5 @@
 "Games"
 {
-	"left4dead"
-	{
-		"Signatures"
-		{
-			"NextBotCreatePlayerBot<Tank>"
-			{
-				"library"	"server"
-				"linux"	"@_Z22NextBotCreatePlayerBotI4TankEPT_PKc"
-				"windows"	"\x83\x2A\x2A\x56\x57\x68\x80"
-				"mac"		"@_Z22NextBotCreatePlayerBotI4TankEPT_PKc"
-			}
-		}
-	}
-	
 	"left4dead2"
 	{
 		"Signatures"
