@@ -908,23 +908,24 @@ stock void ExecuteSpawn(int client, char[] sInfected, int iCount, bool btank = f
 			GetClientAbsOrigin(tankbot, Origin);
 			GetClientAbsAngles(tankbot, Angles);
 			iCount--;
+			int newtankbot;
 			for (int i = 0; i < iCount; i++)
 			{
-				tankbot = SDKCall(hCreateTank, "Infected Bot Tank"); //召喚坦克
-				if (tankbot > 0 && IsValidClient(tankbot))
+				newtankbot = SDKCall(hCreateTank, "Lock Down Tank Bot"); //召喚坦克
+				if (newtankbot > 0 && IsValidClient(newtankbot))
 				{
-					SetEntityModel(tankbot, MODEL_TANK);
-					ChangeClientTeam(tankbot, 3);
-					SetEntProp(tankbot, Prop_Send, "m_usSolidFlags", 16);
-					SetEntProp(tankbot, Prop_Send, "movetype", 2);
-					SetEntProp(tankbot, Prop_Send, "deadflag", 0);
-					SetEntProp(tankbot, Prop_Send, "m_lifeState", 0);
-					SetEntProp(tankbot, Prop_Send, "m_iObserverMode", 0);
-					SetEntProp(tankbot, Prop_Send, "m_iPlayerState", 0);
-					SetEntProp(tankbot, Prop_Send, "m_zombieState", 0);
-					DispatchSpawn(tankbot);
-					ActivateEntity(tankbot);
-					TeleportEntity(tankbot, Origin, Angles, NULL_VECTOR); //移動到相同位置
+					SetEntityModel(newtankbot, MODEL_TANK);
+					ChangeClientTeam(newtankbot, 3);
+					SetEntProp(newtankbot, Prop_Send, "m_usSolidFlags", 16);
+					SetEntProp(newtankbot, Prop_Send, "movetype", 2);
+					SetEntProp(newtankbot, Prop_Send, "deadflag", 0);
+					SetEntProp(newtankbot, Prop_Send, "m_lifeState", 0);
+					SetEntProp(newtankbot, Prop_Send, "m_iObserverMode", 0);
+					SetEntProp(newtankbot, Prop_Send, "m_iPlayerState", 0);
+					SetEntProp(newtankbot, Prop_Send, "m_zombieState", 0);
+					DispatchSpawn(newtankbot);
+					ActivateEntity(newtankbot);
+					TeleportEntity(newtankbot, Origin, Angles, NULL_VECTOR); //移動到相同位置
 				}
 			}
 		}
