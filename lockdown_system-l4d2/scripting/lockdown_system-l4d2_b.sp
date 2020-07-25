@@ -5,7 +5,7 @@
 
 #pragma semicolon 1
 #pragma newdecls required //強制1.7以後的新語法
-#define PLUGIN_VERSION "2.2"
+#define PLUGIN_VERSION "2.3"
 
 #define UNLOCK 0
 #define LOCK 1
@@ -74,12 +74,12 @@ public void OnPluginStart()
 	lsNearByAllSurvivor.AddChangeHook(OnLSCVarsChanged);
 	
 	HookEvent("round_start", OnRoundStart);
-	HookEvent("tank_killed", OnTankKilled);
 	
 	HookEvent("round_end", OnRoundEvents);
 	HookEvent("mission_lost", OnRoundEvents);
 	
 	HookEvent("player_use", OnPlayerUsePre, EventHookMode_Pre);
+	HookEvent("entity_killed", TC_ev_EntityKilled);
 
 	Handle hGameConf = LoadGameConfigFile("lockdown_system-l4d2");
 	if( hGameConf == null )
@@ -196,14 +196,17 @@ public void OnRoundStart(Event event, const char[] name, bool dontBroadcast)
 	InitDoor();
 }
 
-public void OnTankKilled(Event event, const char[] name, bool dontBroadcast)
+public Action TC_ev_EntityKilled(Event event, const char[] name, bool dontBroadcast) 
 {
 	if (IsFinaleMap() || HasSaferoomBug() || !bTankDemolition || !bLDFinished)
 	{
 		return;
 	}
-	
-	CreateTimer(1.0, Timer_SpawnTank,_,TIMER_FLAG_NO_MAPCHANGE);
+
+	if (IsPlayerTank(event.GetInt("entindex_killed")))
+	{
+		CreateTimer(1.5, Timer_SpawnTank, _,TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
 
 public Action Timer_SpawnTank(Handle timer)
@@ -1009,4 +1012,9 @@ bool RealFreePlayersOnInfected ()
 			return true;
 	}
 	return false;
+}
+
+bool IsPlayerTank (int client)
+{
+    return (GetEntProp(client, Prop_Send, "m_zombieClass") == 8);
 }
