@@ -22,7 +22,7 @@ l4d_infectedbots_adjust_reduced_spawn_times_on_player "1"
 // If 1, The plugin will adjust spawn timers depending on the gamemode
 l4d_infectedbots_adjust_spawn_times "1"
 
-// Adjust and overrides tank health by this plugin?
+// If 1, adjust and overrides tank health by this plugin?
 l4d_infectedbots_adjust_tankhealth_enable "1"
 
 // If 1, only admins can join the infected team in coop/survival

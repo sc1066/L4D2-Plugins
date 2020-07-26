@@ -10,7 +10,11 @@
 * 
 * WARNING	: Please use sourcemod's latest 1.7 branch snapshot.
 * Version 2.3.3
-*	   - fix Invalid timer handle.
+*	   - fixed Invalid timer handle.
+*	   - fixed colddown timer issue.
+*	   - fixed wrong special limit if numbers of alive survivors are less then 4
+*	   - fixed l4d1 doesn't have "z_finale_spawn_tank_safety_range" convar 
+*	   - update translation
 *
 * Version 2.3.2
 *	   - control zombie common limit.
@@ -511,7 +515,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <multicolors>
-#define PLUGIN_VERSION "2.3.2"
+#define PLUGIN_VERSION "2.3.3"
 
 #define DEBUG 0
 
@@ -1046,7 +1050,9 @@ public void ConVarVersusCoop(ConVar convar, const char[] oldValue, const char[] 
 			SetConVarInt(FindConVar("allow_all_bot_survivor_team"), 1);
 		}
 		else
-		SetConVarInt(FindConVar("sb_all_bot_team"), 1);
+		{
+			SetConVarInt(FindConVar("sb_all_bot_team"), 1);
+		}
 		SetConVarInt(FindConVar("music_manager"), 0); //turn off all music
 	}
 	else
@@ -1058,7 +1064,9 @@ public void ConVarVersusCoop(ConVar convar, const char[] oldValue, const char[] 
 			SetConVarInt(FindConVar("allow_all_bot_survivor_team"), 0);
 		}
 		else
-		SetConVarInt(FindConVar("sb_all_bot_team"), 0);
+		{
+			SetConVarInt(FindConVar("sb_all_bot_team"), 0);
+		}
 		SetConVarInt(FindConVar("music_manager"), 1); //turn on all music
 	}
 }
@@ -1088,7 +1096,9 @@ public void ConVarCoopVersus(ConVar convar, const char[] oldValue, const char[] 
 			SetConVarInt(FindConVar("allow_all_bot_survivor_team"), 1);
 		}
 		else
+		{
 			SetConVarInt(FindConVar("sb_all_bot_team"), 1);
+		}
 
 		SetConVarInt(FindConVar("music_manager"), 0); //turn off all music
 	}
@@ -1100,7 +1110,9 @@ public void ConVarCoopVersus(ConVar convar, const char[] oldValue, const char[] 
 			SetConVarInt(FindConVar("allow_all_bot_survivor_team"), 0);
 		}
 		else
+		{
 			SetConVarInt(FindConVar("sb_all_bot_team"), 0);
+		}
 
 		SetConVarInt(FindConVar("music_manager"), 1); //turn on all music
 	}
@@ -1407,7 +1419,9 @@ public Action PluginStart(Handle timer)
 			SetConVarInt(FindConVar("allow_all_bot_survivor_team"), 1);
 		}
 		else
+		{
 			SetConVarInt(FindConVar("sb_all_bot_team"), 1);
+		}
 
 		SetConVarInt(FindConVar("music_manager"), 0); //turn off all music
 	}
@@ -1807,8 +1821,6 @@ public void OnClientPutInServer(int client)
 	}
 	//else hudDisabled[client] = 1;
 	// End Durzel's code **********************************************************************************
-	
-	//CreateTimer(1.0,ColdDown_Timer,_,TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action CheckGameMode(int client, int args)
@@ -2373,7 +2385,7 @@ public Action PlayerChangeTeamCheck(Handle timer,int client)
 			}
 			else
 			{
-				PrintHintText(client, "Can't Join The Infected Team during current mode.");
+				PrintHintText(client, "%T", "Can't Join The Infected Team.", client);
 			}
 			ChangeClientTeam(client,TEAM_SPECTATOR);
 		}
@@ -2385,18 +2397,40 @@ public Action ColdDown_Timer(Handle timer)
 {
 	int iAliveSurplayers = CheckAliveSurvivorPlayers_InSV();
 
-	if(iAliveSurplayers >= 4 && iAliveSurplayers != iPlayersInSurvivorTeam)
+	if(iAliveSurplayers >= 0 && iAliveSurplayers != iPlayersInSurvivorTeam)
 	{
 		int addition = iAliveSurplayers - 4;
 
-		SetConVarInt(h_MaxPlayerZombies, i_OriginalMaxPlayerZombies + h_PlayerAddZombies.IntValue * (addition/h_PlayerAddZombiesScale.IntValue));
-		if(h_TankHealthAdjust.BoolValue) SetConVarInt(cvarZombieHP[6], h_TankHealth.IntValue + h_PlayerAddTankHealth.IntValue * (addition/h_PlayerAddTankHealthScale.IntValue));
-		if(h_CommonLimitAdjust.BoolValue) SetConVarInt(h_common_limit_cvar, h_CommonLimit.IntValue + h_PlayerAddCommonLimit.IntValue * (addition/h_PlayerAddCommonLimitScale.IntValue));
-		MaxPlayerZombies = h_MaxPlayerZombies.IntValue;
-		SetConVarInt(FindConVar("z_max_player_zombies"), MaxPlayerZombies);
-
+		if(addition < 0) addition = 0;
+		
+		if(h_PlayerAddZombies.IntValue > 0) 
+		{
+			SetConVarInt(h_MaxPlayerZombies, i_OriginalMaxPlayerZombies + h_PlayerAddZombies.IntValue * (addition/h_PlayerAddZombiesScale.IntValue));
+			MaxPlayerZombies = h_MaxPlayerZombies.IntValue;
+			SetConVarInt(FindConVar("z_max_player_zombies"), MaxPlayerZombies);
+		}
+		if(h_TankHealthAdjust.BoolValue)
+		{
+			SetConVarInt(cvarZombieHP[6], h_TankHealth.IntValue + h_PlayerAddTankHealth.IntValue * (addition/h_PlayerAddTankHealthScale.IntValue));
+			if(h_CommonLimitAdjust.BoolValue)
+			{
+				SetConVarInt(h_common_limit_cvar, h_CommonLimit.IntValue + h_PlayerAddCommonLimit.IntValue * (addition/h_PlayerAddCommonLimitScale.IntValue));
+				C_PrintToChatAll("[{olive}TS{default}] %t","Current status1",iAliveSurplayers,MaxPlayerZombies,cvarZombieHP[6].IntValue,h_common_limit_cvar.IntValue);
+			}
+			else
+				C_PrintToChatAll("[{olive}TS{default}] %t","Current status3",iAliveSurplayers,MaxPlayerZombies,cvarZombieHP[6].IntValue);
+		}
+		else
+		{
+			if(h_CommonLimitAdjust.BoolValue)
+			{
+				SetConVarInt(h_common_limit_cvar, h_CommonLimit.IntValue + h_PlayerAddCommonLimit.IntValue * (addition/h_PlayerAddCommonLimitScale.IntValue));
+				C_PrintToChatAll("[{olive}TS{default}] %t","Current status2",iAliveSurplayers,MaxPlayerZombies,h_common_limit_cvar.IntValue);
+			}
+			else
+				C_PrintToChatAll("[{olive}TS{default}] %t","Current status4",iAliveSurplayers,MaxPlayerZombies);	
+		}
 		iPlayersInSurvivorTeam = iAliveSurplayers;
-		C_PrintToChatAll("[{olive}TS{default}] %t","Current status",iAliveSurplayers,MaxPlayerZombies,cvarZombieHP[6].IntValue,h_common_limit_cvar.IntValue);
 	}
 }
 
@@ -3477,7 +3511,7 @@ public Action Spawn_InfectedBot(Handle timer)
 	
 	// We decrement the infected queue
 	if(InfectedBotQueue>0) InfectedBotQueue--;
-	
+
 	if(IsPlayerAlive(bot)) CreateTimer(0.2, CheckIfBotsNeededLater, true);
 	else CreateTimer(1.0, CheckIfBotsNeededLater, false);
 }
@@ -3810,7 +3844,7 @@ public void OnPluginEnd()
 	ResetConVar(FindConVar("z_spawn_safety_range"), true, true);
 	ResetConVar(FindConVar("z_spawn_range"), true, true);
 	ResetConVar(FindConVar("z_finale_spawn_safety_range"), true, true);
-	ResetConVar(FindConVar("z_finale_spawn_tank_safety_range"), true, true);
+	if(L4D2Version) ResetConVar(FindConVar("z_finale_spawn_tank_safety_range"), true, true);
 	ResetConVar(FindConVar("z_spawn_flow_limit"), true, true);
 	ResetConVar(h_MaxPlayerZombies, true, true);
 	ResetConVar(FindConVar("z_tank_health"), true, true);
@@ -3849,7 +3883,7 @@ public Action TimerAnnounce(Handle timer, int client)
 		if (GetClientTeam(client) == TEAM_INFECTED)
 		{
 			// Show welcoming instruction message to client
-			PrintHintText(client, "This server runs \x03Infected Bots v%s\x01 - say !infhud to toggle HUD on/off", PLUGIN_VERSION);
+			PrintHintText(client, "%t","Hud INFO", PLUGIN_VERSION);
 			
 			// This client now knows about the mod, don't tell them again for the rest of the game.
 			clientGreeted[client] = 1;
@@ -4552,14 +4586,16 @@ void GetSpawnDisConvars()
 		int flags = (FindConVar("z_finale_spawn_safety_range")).Flags;
 		SetConVarBounds(FindConVar("z_finale_spawn_safety_range"), ConVarBound_Upper, false);
 		SetConVarFlags(FindConVar("z_finale_spawn_safety_range"), flags & ~FCVAR_NOTIFY);
-		
-		// Removes the boundaries for z_finale_spawn_tank_safety_range and notify flag
-		int flags2 = FindConVar("z_finale_spawn_tank_safety_range").Flags;
-		SetConVarBounds(FindConVar("z_finale_spawn_tank_safety_range"), ConVarBound_Upper, false);
-		SetConVarFlags(FindConVar("z_finale_spawn_tank_safety_range"), flags2 & ~FCVAR_NOTIFY);
-		
 		SetConVarInt(FindConVar("z_finale_spawn_safety_range"),h_SpawnDistanceFinal.IntValue);
-		SetConVarInt(FindConVar("z_finale_spawn_tank_safety_range"),h_SpawnDistanceFinal.IntValue);
+		
+		if(L4D2Version)
+		{
+			// Removes the boundaries for z_finale_spawn_tank_safety_range and notify flag
+			int flags2 = FindConVar("z_finale_spawn_tank_safety_range").Flags;
+			SetConVarBounds(FindConVar("z_finale_spawn_tank_safety_range"), ConVarBound_Upper, false);
+			SetConVarFlags(FindConVar("z_finale_spawn_tank_safety_range"), flags2 & ~FCVAR_NOTIFY);
+			SetConVarInt(FindConVar("z_finale_spawn_tank_safety_range"),h_SpawnDistanceFinal.IntValue);
+		}
 	}
 	
 	// Removes the boundaries for z_spawn_range and notify flag
